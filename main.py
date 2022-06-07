@@ -4,6 +4,9 @@ import socketserver
 import time
 
 from pathlib import Path
+from collections import namedtuple
+from typing import Union, List, Optional, Tuple
+
 from loguru import logger
 
 LOG_PATH = Path(__file__).parent.resolve() / "logs"
@@ -17,6 +20,8 @@ LOG_PATH = Path(__file__).parent.resolve() / "logs"
 
 # 按时间分割，每日 12:00 分割一次，保留 15 天
 logger.add(LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days")
+
+Point = namedtuple("Point", ["x", "y"])
 
 
 def protect(*protected):
@@ -50,8 +55,8 @@ class ThreadingTCPServer(socketserver.ThreadingTCPServer):
 
 
 class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "execute")):
-    wait_timeout = None
-    interval_timeout = None
+    wait_timeout = 1  # seconds
+    interval_timeout = 0.5  # seconds
 
     # TODO: 接收客户端数据的作用是什么？
 
@@ -71,47 +76,40 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         self.request.sendall(bytes(data, "utf8"))
         response = self.request.recv(1024).decode("utf8").strip()
         logger.info(response)
-        return response
+        return response.split("/")[-1]
 
     def show_toast(self, text: str) -> bool:
         """
         Toast弹窗
-        :param text: 弹窗内容
+        :param text: 弹窗内容；
         :return:
         """
         response = self._send_data("showToast", text)
-        return response.split("/")[-1] == "true"
-
-    @staticmethod
-    def sleep(seconds: float) -> None:
-        """
-        线程休眠
-        :param seconds: 休眠时间
-        :return:
-        """
-        return time.sleep(seconds)
+        return response == "true"
 
     @classmethod
     def set_implicit_timeout(cls, wait_seconds: float, interval_seconds: float = 0.005) -> None:
         """
         设置找图色的隐式等待时间
-        :param wait_seconds:  等待时间
-        :param interval_seconds: 轮询时间，默认 5 毫秒
+        :param wait_seconds:  等待时间；
+        :param interval_seconds: 轮询时间，默认 5 毫秒；
         :return:
         """
         cls.wait_timeout = wait_seconds
         cls.interval_timeout = interval_seconds
 
-    def save_screenshot(self, image_name: str, region: list = None, algorithm: list = None):
+    # TODO: 是否应该返回图片路径
+    def save_screenshot(self, image_name: str, region: list = None, algorithm: list = None) -> Tuple[bool, str]:
         """
         保存截图
         :param image_name: 图片名称，保存在手机 /storage/emulated/0/Android/data/com.aibot.client/files/ 路径下；
-        :param region:  截图区域，默认全屏；
+        :param region: 截图区域，默认全屏；
         :param algorithm: 处理截图所用算法和参数，默认保存原图；
         :return:
-        # 区域相关
+
+        # 区域相关参数
         region = [0, 0, 0, 0] 按元素顺序分别代表：起点x、起点y、终点、终点y，最终得到一个矩形。
-        # 算法相关
+        # 算法相关参数
         algorithm = [0, 0, 0] # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
         threshold 和 max_val 同为 255 时灰度处理.
         0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
@@ -144,7 +142,65 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         response = self._send_data("saveScreenshot", base_path + image_name, left, top, right, bottom,
                                    algorithm_type, threshold, max_val)
 
-        return response.split("/")[-1] == "true"
+        if response == "true":
+            return True, base_path + image_name
+
+        return False, ""
+
+    # TODO: List[int] 怎么提示元素个数?
+    def get_color(self, point: Union[Point, List[int]]) -> Optional[str]:
+        """
+        获取指定坐标点的色值，返回颜色字符串，例如：#008577
+        :param point: 坐标点；
+        :return:
+        """
+        response = self._send_data("getColor", point[0], point[1])
+        if response == "null":
+            return None
+        return response
+
+    def find_image(self, image_path, region: list = None, algorithm: list = None,
+                   similarity: float = 0.9) -> Optional[Point]:
+        """
+        寻找图片坐标，在屏幕中寻找指定图片的坐标
+        :param image_path: 图片的绝对路径；
+        :param region: 从指定区域中找图，默认全屏；
+        :param algorithm: 处理大图所用的算法，默认原图，注意：指定图片处理时所用的算法，应该和此方法的算法一致；
+        :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :return:
+
+        region 与 algorithm 参数，和 self.save_screenshot() 方法的同名参数一致，此处不再赘述；
+        """
+        # 截图区域 默认值
+        left, top, right, bottom = [0, 0, 0, 0]
+        # 算法 默认值
+        algorithm_type, threshold, max_val = [0, 0, 0]
+
+        if region:
+            left, top, right, bottom = region
+
+        if algorithm:
+            algorithm_type, threshold, max_val = algorithm
+            if algorithm_type in (5, 6):
+                threshold = 127
+                max_val = 255
+
+        end_time = time.time() + self.wait_timeout
+
+        while time.time() < end_time:
+            response = self._send_data("findImage", image_path, left, top, right, bottom, similarity,
+                                       algorithm_type, threshold, max_val)
+
+            # 找图失败
+            if response == "-1.0|-1.0":
+                time.sleep(self.interval_timeout)
+            else:
+                # 找图成功，返回图片左上角坐标
+                x, y = response.split("|")
+                return Point(x=int(x[0]), y=int(y[1]))
+
+        # 超时
+        return None
 
     def handle(self) -> None:
         # 执行脚本
@@ -177,12 +233,11 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
 class AiBotTestScript(AiBotMain):
     def script_main(self):
-        self.show_toast("连接成功, 3S后开始截图")
-        self.sleep(3)
-        resp = self.save_screenshot("test2.png", algorithm=[2, 100, 200])
-        self.show_toast("截图成功")
+        self.show_toast("连接成功")
+        image_path = self.save_screenshot("666.png", region=[0, 0, 540, 990])
+        print(image_path)
         while True:
-            self.sleep(5)
+            time.sleep(5)
             self.show_toast("恭喜发财")
 
 
