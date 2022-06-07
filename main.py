@@ -40,7 +40,7 @@ class AiBotScriptMain(socketserver.BaseRequestHandler, metaclass=protect("handle
         data = args_len.rstrip("/") + "\n" + args_text
 
         self.request.sendall(bytes(data, "utf8"))
-        return self.request.recv(1024).decode("urf8").strip()
+        return self.request.recv(1024).decode("utf8").strip()
 
     def show_toast(self, text: str) -> bool:
         """"""
@@ -78,7 +78,7 @@ class AiBotScriptMain(socketserver.BaseRequestHandler, metaclass=protect("handle
 
 class AiBotScript(AiBotScriptMain):
     def script_main(self):
-        print("开始执行脚本...")
+        self.show_toast("连接成功")
         while True:
             data = self.request.recv(1024)
             print("接收数据：", data.decode("utf8"))
