@@ -23,6 +23,10 @@ logger.add(LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days
 
 Point = namedtuple("Point", ["x", "y"])
 
+Region = Tuple[int, int, int, int]
+Algorithm = Tuple[int, int, int]
+SubColors = List[Tuple[int, int, str]]
+
 
 def protect(*protected):
     """
@@ -76,7 +80,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         self.request.sendall(bytes(data, "utf8"))
         response = self.request.recv(1024).decode("utf8").strip()
         logger.info(response)
-        return response.split("/")[-1]
+        return response.split("/", 1)[-1]
 
     def show_toast(self, text: str) -> bool:
         """
@@ -98,8 +102,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         cls.wait_timeout = wait_seconds
         cls.interval_timeout = interval_seconds
 
-    # TODO: 是否应该返回图片路径
-    def save_screenshot(self, image_name: str, region: list = None, algorithm: list = None) -> Tuple[bool, str]:
+    def save_screenshot(self, image_name: str, region: Region = None, algorithm: Algorithm = None) -> Tuple[bool, str]:
         """
         保存截图
         :param image_name: 图片名称，保存在手机 /storage/emulated/0/Android/data/com.aibot.client/files/ 路径下；
@@ -147,25 +150,68 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
         return False, ""
 
-    # TODO: List[int] 怎么提示元素个数?
-    def get_color(self, point: Union[Point, List[int]]) -> Optional[str]:
+    def get_color(self, point: Union[Point, Tuple[int, int]]) -> str:
         """
-        获取指定坐标点的色值，返回颜色字符串，例如：#008577
+        获取指定坐标点的色值，返回颜色字符串，例如：#008577，失败时返回空字符串
         :param point: 坐标点；
         :return:
         """
         response = self._send_data("getColor", point[0], point[1])
         if response == "null":
-            return None
+            return ""
         return response
 
-    def find_image(self, image_path, region: list = None, algorithm: list = None,
-                   similarity: float = 0.9) -> Optional[Point]:
+    # TODO: 未经测试
+    def find_color(self, color: str, sub_colors: SubColors = None, region: Region = None, similarity: float = 0.9):
         """
-        寻找图片坐标，在屏幕中寻找指定图片的坐标
+        查找指定色值的坐标点
+        :param color: 颜色字符串，必须以 # 开头，例如：#008577；
+        :param sub_colors: 辅助定位的其他颜色；
+        :param region: 在指定区域内找色，默认全屏；
+        :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :return:
+        """
+        # 截图区域 默认值
+        left, top, right, bottom = [0, 0, 0, 0]
+
+        if region:
+            left, top, right, bottom = region
+
+        if sub_colors:
+            sub_colors_str = ""
+            for sub_color in sub_colors:
+                offset_x, offset_y, color_str = sub_color
+                sub_colors_str += str(offset_x) + "/" + str(offset_y) + "/" + color_str + "\n"
+
+            # 去除最后一个 \n
+            sub_colors_str = sub_colors_str.strip()
+        else:
+            sub_colors_str = "null"
+
+        end_time = time.time() + self.wait_timeout
+
+        while time.time() < end_time:
+            response = self._send_data("findColor", color, sub_colors_str, left, top, right, bottom, similarity)
+
+            # 找色失败
+            if response == "-1.0|-1.0":
+                time.sleep(self.interval_timeout)
+            else:
+                # 找色成功
+                x, y = response.split("|")
+                return True, Point(x=int(x), y=int(y))
+
+        # 超时
+        return False, Point(x=-1, y=-1)
+
+    # TODO: 未经测试
+    def find_image(self, image_path, region: Region = None, algorithm: Algorithm = None,
+                   similarity: float = 0.9) -> Tuple[bool, Point]:
+        """
+        寻找图片坐标，在当前屏幕中寻找给定图片的坐标
         :param image_path: 图片的绝对路径；
         :param region: 从指定区域中找图，默认全屏；
-        :param algorithm: 处理大图所用的算法，默认原图，注意：指定图片处理时所用的算法，应该和此方法的算法一致；
+        :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
         :return:
 
@@ -197,10 +243,103 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
             else:
                 # 找图成功，返回图片左上角坐标
                 x, y = response.split("|")
-                return Point(x=int(x[0]), y=int(y[1]))
+                return True, Point(x=int(x), y=int(y))
 
         # 超时
-        return None
+        return False, Point(x=-1, y=-1)
+
+    # TODO: 未经测试
+    def find_images_by_opencv(self, image_path, region: Region = None, algorithm: Algorithm = None,
+                              similarity: float = 0.9, multi: int = 1) -> Tuple[bool, List[Point]]:
+        """
+        寻找图片坐标，在当前屏幕中寻找给定图片的坐标；
+        与 self.find_image() 基本一致，采用 OpenCV 算法，并且可找多个目标。
+        :param image_path: 图片的绝对路径；
+        :param region: 从指定区域中找图，默认全屏；
+        :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
+        :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param multi: 目标数量，默认为 1，找到 1 个目标后立即结束；
+        :return:
+
+        region 与 algorithm 参数，和 self.save_screenshot() 方法的同名参数一致，此处不再赘述；
+        """
+        # 截图区域 默认值
+        left, top, right, bottom = [0, 0, 0, 0]
+        # 算法 默认值
+        algorithm_type, threshold, max_val = [0, 0, 0]
+
+        if region:
+            left, top, right, bottom = region
+
+        if algorithm:
+            algorithm_type, threshold, max_val = algorithm
+            if algorithm_type in (5, 6):
+                threshold = 127
+                max_val = 255
+
+        end_time = time.time() + self.wait_timeout
+
+        while time.time() < end_time:
+            response = self._send_data("findImage", image_path, left, top, right, bottom, similarity,
+                                       algorithm_type, threshold, max_val)
+
+            # 找图失败
+            if response == "-1.0|-1.0":
+                time.sleep(self.interval_timeout)
+            else:
+                # 找图成功，返回图片左上角坐标
+
+                # 分割出多个图片的坐标
+                image_points = response.split("/")
+
+                point_list = []
+
+                for point_str in image_points:
+                    x, y = point_str.split("|")
+                    point_list.append(Point(x=int(x), y=int(y)))
+
+                return True, point_list
+        # 超时
+        return False, []
+
+    # 未经测试
+    def find_dynamic_image(self, interval_time, region: Region = None) -> Tuple[bool, List[Point]]:
+        """
+        找动态图，对比同一张图在不同时刻是否发生变化，返回多个坐标点
+        :param interval_time: 前后时刻的间隔时间；
+        :param region: 在指定区域找图，默认全屏；
+        :return:
+        """
+        # 指定区域 默认值
+        left, top, right, bottom = [0, 0, 0, 0]
+
+        if region:
+            left, top, right, bottom = region
+
+        end_time = time.time() + self.wait_timeout
+
+        while time.time() < end_time:
+            response = self._send_data("findAnimation", interval_time, left, top, right, bottom)
+
+            # 找图失败
+            if response == "-1.0|-1.0":
+                time.sleep(self.interval_timeout)
+            else:
+                # 找图成功，返回图片左上角坐标
+
+                # 分割出多个图片的坐标
+                image_points = response.split("/")
+
+                point_list = []
+
+                for point_str in image_points:
+                    x, y = point_str.split("|")
+                    point_list.append(Point(x=int(x), y=int(y)))
+
+                return True, point_list
+
+        # 超时
+        return False, []
 
     def handle(self) -> None:
         # 执行脚本
@@ -234,8 +373,10 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 class AiBotTestScript(AiBotMain):
     def script_main(self):
         self.show_toast("连接成功")
-        image_path = self.save_screenshot("666.png", region=[0, 0, 540, 990])
+        _path = "/Users/chenxun/PycharmProjects/Aibot/7BA630FA96C38F241B0EA32F86D213EA.jpg"
+        image_path = self.find_image(_path, similarity=0.5)
         print(image_path)
+
         while True:
             time.sleep(5)
             self.show_toast("恭喜发财")
