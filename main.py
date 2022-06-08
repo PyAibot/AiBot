@@ -47,7 +47,6 @@ def protect(*protected):
                 for attr in protected:
                     if attr in attr_names:
                         raise AttributeError(f'Overriding of attribute `{attr}` not allowed.')
-
             # 首次调用后设置为 False
             mcs.is_parent_class = False
             return super().__new__(mcs, name, bases, namespace)
@@ -76,31 +75,23 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         cls.wait_timeout = wait_seconds
         cls.interval_timeout = interval_seconds
 
-    def _send_data(self, *args) -> str:
+    def __send_data(self, *args) -> str:
+        logger.info(f"↓↓↓ {args}")
         args_len = ""
         args_text = ""
 
         for argv in args:
-            args_text += str(argv)
-            args_len += str(len(bytes(str(argv), "utf8")))
-            args_len += "/"
+            argv = str(argv)
+            args_text += argv
+            args_len += str(len(bytes(argv, 'utf8'))) + "/"
 
-        data = args_len.rstrip("/") + "\n" + args_text
+        data = args_len.strip("/") + "\n" + args_text
 
-        logger.info(bytes(data, "utf8"))
+        logger.info(f"--> {bytes(data, 'utf8')}")
         self.request.sendall(bytes(data, "utf8"))
         response = self.request.recv(1024).decode("utf8").strip()
-        logger.info(response)
+        logger.info(f"<-- {response}")
         return response.split("/", 1)[-1]
-
-    def show_toast(self, text: str) -> bool:
-        """
-        Toast 弹窗
-        :param text: 弹窗内容；
-        :return:
-        """
-        response = self._send_data("showToast", text)
-        return response == "true"
 
     def save_screenshot(self, image_name: str, region: Region = None, algorithm: Algorithm = None) -> Optional[str]:
         """
@@ -126,28 +117,24 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         if image_name.find("/") != -1:
             raise ValueError("`image_ name` cannot contain `/`.")
 
-        # 存储路径
+        # 基础存储路径
         base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
-        # 截图区域 默认值
-        left, top, right, bottom = [0, 0, 0, 0]
-        # 算法 默认值
-        algorithm_type, threshold, max_val = [0, 0, 0]
 
-        if region:
-            left, top, right, bottom = region
+        if not region:
+            region = [0, 0, 0, 0]
 
-        if algorithm:
+        if not algorithm:
+            algorithm_type, threshold, max_val = [0, 0, 0]
+        else:
             algorithm_type, threshold, max_val = algorithm
             if algorithm_type in (5, 6):
                 threshold = 127
                 max_val = 255
 
-        response = self._send_data("saveScreenshot", base_path + image_name, left, top, right, bottom,
-                                   algorithm_type, threshold, max_val)
-
+        response = self.__send_data("saveScreenshot", base_path + image_name, *region,
+                                    algorithm_type, threshold, max_val)
         if response == "true":
             return base_path + image_name
-
         return None
 
     # #############
@@ -159,7 +146,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         :param point: 坐标点；
         :return:
         """
-        response = self._send_data("getColor", point[0], point[1])
+        response = self.__send_data("getColor", point[0], point[1])
         if response == "null":
             return None
         return response
@@ -175,28 +162,22 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
         :return:
         """
-        # 截图区域 默认值
-        left, top, right, bottom = [0, 0, 0, 0]
-
-        if region:
-            left, top, right, bottom = region
+        if not region:
+            region = [0, 0, 0, 0]
 
         if sub_colors:
             sub_colors_str = ""
             for sub_color in sub_colors:
                 offset_x, offset_y, color_str = sub_color
-                sub_colors_str += str(offset_x) + "/" + str(offset_y) + "/" + color_str + "\n"
-
+                sub_colors_str += f"{offset_x}/{offset_y}/{color_str}\n"
             # 去除最后一个 \n
             sub_colors_str = sub_colors_str.strip()
         else:
             sub_colors_str = "null"
 
         end_time = time.time() + self.wait_timeout
-
         while time.time() < end_time:
-            response = self._send_data("findColor", color, sub_colors_str, left, top, right, bottom, similarity)
-
+            response = self.__send_data("findColor", color, sub_colors_str, *region, similarity)
             # 找色失败
             if response == "-1.0|-1.0":
                 time.sleep(self.interval_timeout)
@@ -204,7 +185,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
                 # 找色成功
                 x, y = response.split("|")
                 return Point(x=int(x), y=int(y))
-
         # 超时
         return None
 
@@ -229,26 +209,21 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
         region 与 algorithm 参数，和 self.save_screenshot() 方法的同名参数一致，此处不再赘述；
         """
-        # 截图区域 默认值
-        left, top, right, bottom = [0, 0, 0, 0]
-        # 算法 默认值
-        algorithm_type, threshold, max_val = [0, 0, 0]
+        if not region:
+            region = [0, 0, 0, 0]
 
-        if region:
-            left, top, right, bottom = region
-
-        if algorithm:
+        if not algorithm:
+            algorithm_type, threshold, max_val = [0, 0, 0]
+        else:
             algorithm_type, threshold, max_val = algorithm
             if algorithm_type in (5, 6):
                 threshold = 127
                 max_val = 255
 
         end_time = time.time() + self.wait_timeout
-
         while time.time() < end_time:
-            response = self._send_data("findImage", image_path, left, top, right, bottom, similarity,
-                                       algorithm_type, threshold, max_val)
-
+            response = self.__send_data("findImage", image_path, *region, similarity,
+                                        algorithm_type, threshold, max_val)
             # 找图失败
             if response == "-1.0|-1.0":
                 time.sleep(self.interval_timeout)
@@ -256,7 +231,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
                 # 找图成功，返回图片左上角坐标
                 x, y = response.split("|")
                 return Point(x=int(x), y=int(y))
-
         # 超时
         return None
 
@@ -275,15 +249,12 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
         region 与 algorithm 参数，和 self.save_screenshot() 方法的同名参数一致，此处不再赘述；
         """
-        # 截图区域 默认值
-        left, top, right, bottom = [0, 0, 0, 0]
-        # 算法 默认值
-        algorithm_type, threshold, max_val = [0, 0, 0]
+        if not region:
+            region = [0, 0, 0, 0]
 
-        if region:
-            left, top, right, bottom = region
-
-        if algorithm:
+        if not algorithm:
+            algorithm_type, threshold, max_val = [0, 0, 0]
+        else:
             algorithm_type, threshold, max_val = algorithm
             if algorithm_type in (5, 6):
                 threshold = 127
@@ -291,8 +262,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
         end_time = time.time() + self.wait_timeout
         while time.time() < end_time:
-            response = self._send_data("findImage", image_path, left, top, right, bottom, similarity,
-                                       algorithm_type, threshold, max_val, multi)
+            response = self.__send_data("findImage", image_path, *region, similarity,
+                                        algorithm_type, threshold, max_val, multi)
             # 找图失败
             if response == "-1.0|-1.0":
                 time.sleep(self.interval_timeout)
@@ -316,16 +287,12 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         :param region: 在指定区域找图，默认全屏；
         :return:
         """
-        # 指定区域 默认值
-        left, top, right, bottom = [0, 0, 0, 0]
-
-        if region:
-            left, top, right, bottom = region
+        if not region:
+            region = [0, 0, 0, 0]
 
         end_time = time.time() + self.wait_timeout
-
         while time.time() < end_time:
-            response = self._send_data("findAnimation", interval_time, left, top, right, bottom)
+            response = self.__send_data("findAnimation", interval_time, *region)
             # 找图失败
             if response == "-1.0|-1.0":
                 time.sleep(self.interval_timeout)
@@ -350,7 +317,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         :param point: 坐标；
         :return:
         """
-        return self._send_data("click", point[0], point[1]) == "true"
+        return self.__send_data("click", point[0], point[1]) == "true"
 
     def long_click(self, point: _Point, duration: float) -> bool:
         """
@@ -359,7 +326,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         :param duration: 按住时长，单位秒；
         :return:
         """
-        return self._send_data("longClick", point[0], point[1], duration * 1000) == "true"
+        return self.__send_data("longClick", point[0], point[1], duration * 1000) == "true"
 
     def swipe(self, start_point: _Point, end_point: _Point, duration: float) -> bool:
         """
@@ -369,8 +336,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         :param duration: 滑动时长，单位秒；
         :return:
         """
-        return self._send_data("swipe", start_point[0], start_point[1], end_point[0], end_point[1],
-                               duration * 1000) == "true"
+        return self.__send_data("swipe", start_point[0], start_point[1], end_point[0], end_point[1],
+                                duration * 1000) == "true"
 
     def gesture(self, gesture_path: List[_Point], duration: float) -> bool:
         """
@@ -385,7 +352,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
             gesture_path_str += f"{point[0]}/{point[1]}/\n"
         gesture_path_str = gesture_path_str.strip()
 
-        return self._send_data("dispatchGesture", gesture_path_str, duration) == "true"
+        return self.__send_data("dispatchGesture", gesture_path_str, duration) == "true"
 
     # ##############
     #   OCR 相关   #
@@ -414,7 +381,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         :param scale:
         :return:
         """
-        response = self._send_data("ocr", host, *region, scale)
+        response = self.__send_data("ocr", host, *region, scale)
         if response == "null" or response == "":
             return None
         return self.__parse_ocr(response)
@@ -425,34 +392,43 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
     # ##########
     #   其他   #
     # ##########
+    def show_toast(self, text: str) -> bool:
+        """
+        Toast 弹窗
+        :param text: 弹窗内容；
+        :return:
+        """
+        response = self.__send_data("showToast", text)
+        return response == "true"
+
     def send_keys(self, text: str) -> bool:
         """
         发送文本，需要打开 AiBot 输入法
         :param text: 文本内容
         :return:
         """
-        return self._send_data("sendKeys", text) == "true"
+        return self.__send_data("sendKeys", text) == "true"
 
     def back(self) -> bool:
         """
         返回
         :return:
         """
-        return self._send_data("back") == "true"
+        return self.__send_data("back") == "true"
 
     def home(self) -> bool:
         """
         返回桌面
         :return:
         """
-        return self._send_data("home") == "true"
+        return self.__send_data("home") == "true"
 
     def recent_tasks(self):
         """
         显示最近任务
         :return:
         """
-        return self._send_data("recents") == "true"
+        return self.__send_data("recents") == "true"
 
     def handle(self) -> None:
         # 执行脚本
@@ -487,7 +463,7 @@ class AiBotTestScript(AiBotMain):
     def script_main(self):
         self.show_toast("连接成功")
         _path = "/Users/chenxun/PycharmProjects/Aibot/7BA630FA96C38F241B0EA32F86D213EA.jpg"
-        image_path = self.find_image(_path, similarity=0.5)
+        image_path = self.find_image("77777.png", region=(0, 0, 0, 0))
         print(image_path)
 
         while True:
