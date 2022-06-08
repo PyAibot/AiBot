@@ -23,6 +23,7 @@ logger.add(LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days
 
 Point = namedtuple("Point", ["x", "y"])
 
+_Point = Union[Point, Tuple[int, int]]
 Region = Tuple[int, int, int, int]
 Algorithm = Tuple[int, int, int]
 SubColors = List[Tuple[int, int, str]]
@@ -64,7 +65,17 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
     # TODO: 接收客户端数据的作用是什么？
 
-    @logger.catch()
+    @classmethod
+    def set_implicit_timeout(cls, wait_seconds: float, interval_seconds: float = 0.005) -> None:
+        """
+        设置找图色的隐式等待时间
+        :param wait_seconds:  等待时间；
+        :param interval_seconds: 轮询时间，默认 5 毫秒；
+        :return:
+        """
+        cls.wait_timeout = wait_seconds
+        cls.interval_timeout = interval_seconds
+
     def _send_data(self, *args) -> str:
         args_len = ""
         args_text = ""
@@ -90,17 +101,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         """
         response = self._send_data("showToast", text)
         return response == "true"
-
-    @classmethod
-    def set_implicit_timeout(cls, wait_seconds: float, interval_seconds: float = 0.005) -> None:
-        """
-        设置找图色的隐式等待时间
-        :param wait_seconds:  等待时间；
-        :param interval_seconds: 轮询时间，默认 5 毫秒；
-        :return:
-        """
-        cls.wait_timeout = wait_seconds
-        cls.interval_timeout = interval_seconds
 
     def save_screenshot(self, image_name: str, region: Region = None, algorithm: Algorithm = None) -> Tuple[bool, str]:
         """
@@ -150,7 +150,10 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
         return False, ""
 
-    def get_color(self, point: Union[Point, Tuple[int, int]]) -> str:
+    # #############
+    #   色值相关   #
+    # #############
+    def get_color(self, point: _Point) -> str:
         """
         获取指定坐标点的色值，返回颜色字符串，例如：#008577，失败时返回空字符串
         :param point: 坐标点；
@@ -204,6 +207,13 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         # 超时
         return False, Point(x=-1, y=-1)
 
+    def compare_color(self):
+        """比较指定坐标点的颜色值"""
+        pass
+
+    # #############
+    #   找图相关   #
+    # #############
     # TODO: 未经测试
     def find_image(self, image_path, region: Region = None, algorithm: Algorithm = None,
                    similarity: float = 0.9) -> Tuple[bool, Point]:
@@ -302,7 +312,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         # 超时
         return False, []
 
-    # 未经测试
+    # TODO: 未经测试
     def find_dynamic_image(self, interval_time, region: Region = None) -> Tuple[bool, List[Point]]:
         """
         找动态图，对比同一张图在不同时刻是否发生变化，返回多个坐标点
@@ -340,6 +350,119 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
         # 超时
         return False, []
+
+    # ################
+    #   坐标操作相关   #
+    # ################
+    def click(self, point: _Point) -> bool:
+        """
+        点击坐标
+        :param point: 坐标；
+        :return:
+        """
+        return self._send_data("click", point[0], point[1]) == "true"
+
+    def long_click(self, point: _Point, duration: float) -> bool:
+        """
+        长按坐标
+        :param point: 坐标；
+        :param duration: 按住时长，单位秒；
+        :return:
+        """
+        return self._send_data("longClick", point[0], point[1], duration * 1000) == "true"
+
+    def swipe(self, start_point: _Point, end_point: _Point, duration: float) -> bool:
+        """
+        滑动坐标
+        :param start_point: 起始坐标；
+        :param end_point: 结束坐标；
+        :param duration: 滑动时长，单位秒；
+        :return:
+        """
+        return self._send_data("swipe", start_point[0], start_point[1], end_point[0], end_point[1],
+                               duration * 1000) == "true"
+
+    def gesture(self, gesture_path: List[_Point], duration: float) -> bool:
+        """
+        执行手势
+        :param gesture_path: 手势路径，由一系列坐标点组成
+        :param duration: 手势执行时长, 单位秒
+        :return:
+        """
+
+        gesture_path_str = ""
+        for point in gesture_path:
+            gesture_path_str += f"{point[0]}/{point[1]}/\n"
+        gesture_path_str = gesture_path_str.strip()
+
+        return self._send_data("dispatchGesture", gesture_path_str, duration) == "true"
+
+    # ##############
+    #   OCR 相关   #
+    ################
+    def __parse_ocr(self, text: str) -> str:
+        """
+        解析 OCR
+        :param text:
+        :return:
+        """
+        # TODO: 语法错误，解析规则不清楚，未完待续
+        # text = text.replace(/"/, '\\"')
+
+        text_list = text.split(")]")
+
+        for _str in text_list:
+            pass
+
+        return ""
+
+    def __ocr_server(self, host, region: Region, scale: float) -> Optional[str]:
+        """
+        OCR 服务，通过 OCR 识别屏幕中文字
+        :param host:
+        :param region:
+        :param scale:
+        :return:
+        """
+        response = self._send_data("ocr", host, *region, scale)
+        if response == "null" or response == "":
+            return None
+        return self.__parse_ocr(response)
+
+    def get_text(self):
+        """获取屏幕中文字"""
+
+    # ##########
+    #   其他   #
+    # ##########
+    def send_keys(self, text: str) -> bool:
+        """
+        发送文本，需要打开 AiBot 输入法
+        :param text: 文本内容
+        :return:
+        """
+        return self._send_data("sendKeys", text) == "true"
+
+    def back(self) -> bool:
+        """
+        返回
+        :return:
+        """
+        return self._send_data("back") == "true"
+
+    def home(self) -> bool:
+        """
+        返回桌面
+        :return:
+        """
+        return self._send_data("home") == "true"
+
+    def recent_tasks(self):
+        """
+        显示最近任务
+        :return:
+        """
+        return self._send_data("recents") == "true"
 
     def handle(self) -> None:
         # 执行脚本
