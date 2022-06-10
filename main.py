@@ -2,7 +2,9 @@ import abc
 import socket
 import socketserver
 import time
+import re
 
+from ast import literal_eval
 from pathlib import Path
 from collections import namedtuple
 from typing import Union, List, Optional, Tuple
@@ -85,11 +87,11 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
             args_text += argv
             args_len += str(len(bytes(argv, 'utf8'))) + "/"
 
-        data = args_len.strip("/") + "\n" + args_text
+        data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        logger.info(f"--> {bytes(data, 'utf8')}")
-        self.request.sendall(bytes(data, "utf8"))
-        response = self.request.recv(1024).decode("utf8").strip()
+        logger.info(f"--> {data}")
+        self.request.sendall(data)
+        response = self.request.recv(1024 * 100).decode("utf8").strip()
         logger.info(f"<-- {response}")
         return response.split("/", 1)[-1]
 
@@ -311,6 +313,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
     # ################
     #   坐标操作相关   #
     # ################
+    # TODO: 未经测试
     def click(self, point: _Point) -> bool:
         """
         点击坐标
@@ -319,6 +322,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         """
         return self.__send_data("click", point[0], point[1]) == "true"
 
+    # TODO: 未经测试
     def long_click(self, point: _Point, duration: float) -> bool:
         """
         长按坐标
@@ -328,6 +332,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         """
         return self.__send_data("longClick", point[0], point[1], duration * 1000) == "true"
 
+    # TODO: 未经测试
     def swipe(self, start_point: _Point, end_point: _Point, duration: float) -> bool:
         """
         滑动坐标
@@ -339,6 +344,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         return self.__send_data("swipe", start_point[0], start_point[1], end_point[0], end_point[1],
                                 duration * 1000) == "true"
 
+    # TODO: 未经测试
     def gesture(self, gesture_path: List[_Point], duration: float) -> bool:
         """
         执行手势
@@ -357,37 +363,39 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
     # ##############
     #   OCR 相关   #
     ################
-    def __parse_ocr(self, text: str) -> str:
+    @staticmethod
+    def __parse_ocr(text: str) -> list:
         """
-        解析 OCR
+        解析 OCR 识别出出来的信息
         :param text:
         :return:
         """
-        # TODO: 语法错误，解析规则不清楚，未完待续
-        # text = text.replace(/"/, '\\"')
+        pattern = re.compile(r'(\[\[\[).+?(\)])')
+        matches = pattern.finditer(text)
 
-        text_list = text.split(")]")
+        text_list = []
+        for match in matches:
+            result_str = match.group()
+            result_list = literal_eval(result_str)
+            text_list.append(result_list[-1][0])
 
-        for _str in text_list:
-            pass
+        return text_list
 
-        return ""
-
-    def __ocr_server(self, host, region: Region, scale: float) -> Optional[str]:
+    def get_text(self, host: str, region: Region = None, scale: float = 1.0) -> list:
         """
-        OCR 服务，通过 OCR 识别屏幕中文字
-        :param host:
-        :param region:
-        :param scale:
+        通过 OCR 识别屏幕中文字，返回列表
+        :param host: OCR 服务地址
+        :param region: 识别区域
+        :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大
         :return:
         """
+        if not region:
+            region = [0, 0, 0, 0]
+
         response = self.__send_data("ocr", host, *region, scale)
         if response == "null" or response == "":
-            return None
+            return []
         return self.__parse_ocr(response)
-
-    def get_text(self):
-        """获取屏幕中文字"""
 
     # ##########
     #   其他   #
@@ -462,10 +470,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 class AiBotTestScript(AiBotMain):
     def script_main(self):
         self.show_toast("连接成功")
-        _path = "/Users/chenxun/PycharmProjects/Aibot/7BA630FA96C38F241B0EA32F86D213EA.jpg"
-        image_path = self.find_image("77777.png", region=(0, 0, 0, 0))
-        print(image_path)
-
+        text = self.get_text("ocr.ai-bot.net")
+        print(text)
         while True:
             time.sleep(5)
             self.show_toast("恭喜发财")
