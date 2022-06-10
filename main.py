@@ -91,7 +91,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
         logger.info(f"--> {data}")
         self.request.sendall(data)
-        response = self.request.recv(1024 * 100).decode("utf8").strip()
+        # TODO: OCR 返回字节长度不足，导致字节串被分成了2部分，且断开部分无法解码
+        response = self.request.recv(65535).decode("utf8").strip()
         logger.info(f"<-- {response}")
         return response.split("/", 1)[-1]
 
@@ -373,20 +374,20 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         pattern = re.compile(r'(\[\[\[).+?(\)])')
         matches = pattern.finditer(text)
 
-        text_list = []
+        text_info_list = []
         for match in matches:
             result_str = match.group()
-            result_list = literal_eval(result_str)
-            text_list.append(result_list[-1][0])
+            text_info = literal_eval(result_str)
+            text_info_list.append(text_info)
 
-        return text_list
+        return text_info_list
 
-    def get_text(self, host: str, region: Region = None, scale: float = 1.0) -> list:
+    def __ocr_server(self, host: str, region: Region = None, scale: float = 1.0) -> list:
         """
-        通过 OCR 识别屏幕中文字，返回列表
-        :param host: OCR 服务地址
-        :param region: 识别区域
-        :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大
+        OCR 服务，通过 OCR 识别屏幕中文字
+        :param host:
+        :param region:
+        :param scale:
         :return:
         """
         if not region:
@@ -396,6 +397,38 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         if response == "null" or response == "":
             return []
         return self.__parse_ocr(response)
+
+    def get_text(self, host: str, region: Region = None, scale: float = 1.0) -> List[str]:
+        """
+        通过 OCR 识别屏幕中的文字，返回文字列表
+        :param host: OCR 服务地址；
+        :param region: 识别区域，默认全屏；
+        :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
+        :return:
+        """
+        text_info_list = self.__ocr_server(host, region, scale)
+        text_list = []
+        for text_info in text_info_list:
+            text = text_info[-1][0]
+            text_list.append(text)
+        return text_list
+
+    def find_text(self, host: str, text: str, region: Region = None, scale: float = 1.0) -> list:
+        """
+        查找文字所在的坐标，返回坐标列表
+        :param host: OCR 服务地址；
+        :param text: 要查找的文字；
+        :param region: 识别区域，默认全屏；
+        :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
+        :return:
+        """
+        if not region:
+            region = [0, 0, 0, 0]
+
+        text_info_list = self.__ocr_server(host, region, scale)
+        print(text_info_list)
+        # TODO：未完待续
+        return []
 
     # ##########
     #   其他   #
