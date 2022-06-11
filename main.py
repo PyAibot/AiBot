@@ -7,7 +7,7 @@ import re
 from ast import literal_eval
 from pathlib import Path
 from collections import namedtuple
-from typing import Union, List, Optional, Tuple
+from typing import Union, List, Optional, Tuple, Dict
 
 from loguru import logger
 
@@ -215,14 +215,14 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
             else:
                 # 找色成功
                 x, y = response.split("|")
-                return Point(x=int(x), y=int(y))
+                return Point(x=float(x), y=float(y))
         # 超时
         return None
 
     # TODO: 未完待续
     def compare_color(self):
         """比较指定坐标点的颜色值"""
-        pass
+        return NotImplementedError()
 
     # #############
     #   找图相关   #
@@ -261,7 +261,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
             else:
                 # 找图成功，返回图片左上角坐标
                 x, y = response.split("|")
-                return Point(x=int(x), y=int(y))
+                return Point(x=float(x), y=float(y))
         # 超时
         return None
 
@@ -305,7 +305,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
                 point_list = []
                 for point_str in image_points:
                     x, y = point_str.split("|")
-                    point_list.append(Point(x=int(x), y=int(y)))
+                    point_list.append(Point(x=float(x), y=float(y)))
                 return point_list
         # 超时
         return []
@@ -334,7 +334,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
                 point_list = []
                 for point_str in image_points:
                     x, y = point_str.split("|")
-                    point_list.append(Point(x=int(x), y=int(y)))
+                    point_list.append(Point(x=float(x), y=float(y)))
                 return point_list
         # 超时
         return []
@@ -502,9 +502,43 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
         return text_points
 
-    # ##########
-    #   其他   #
-    # ##########
+    # #############
+    #   其他操作   #
+    # #############
+
+    # TODO: 无法启动
+    def start_app(self, name: str) -> bool:
+        """
+        启动 APP
+        :param name: APP名字或者包名
+        :return:
+        """
+        return self.__send_data("startApp", name) == "true"
+
+    def get_android_id(self) -> str:
+        """
+        获取 Android 设备 ID
+        :return:
+        """
+        return self.__send_data("getAndroidId")
+
+    def get_window_size(self) -> Dict[str, float]:
+        """
+        获取屏幕大小
+        :return:
+        """
+        width, height = self.__send_data("getWindowSize").split("|")
+        return {"width": float(width), "height": float(height)}
+
+    def get_image_size(self, image_path) -> Dict[str, float]:
+        """
+        获取图片大小
+        :param image_path: 图片路径；
+        :return:
+        """
+        width, height = self.__send_data("getImageSize", image_path).split("|")
+        return {"width": float(width), "height": float(height)}
+
     def show_toast(self, text: str) -> bool:
         """
         Toast 弹窗
@@ -543,6 +577,9 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         """
         return self.__send_data("recents") == "true"
 
+    # ##########
+    #   其他   #
+    ############
     def handle(self) -> None:
         # 设置阻塞模式
         self.request.setblocking(False)
@@ -582,8 +619,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 class AiBotTestScript(AiBotMain):
     def script_main(self):
         self.show_toast("连接成功")
-        points = self.find_text("ocr.ai-bot.net", "端", region=(0, 990, 540, 1920))
-        print(points)
+        result = self.get_android_id()
+        print(result)
         while True:
             time.sleep(5)
             self.show_toast("恭喜发财")
