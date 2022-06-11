@@ -118,7 +118,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
             try:
                 response = self.request.recv(10240).decode("utf8").strip()
                 break
-            except BlockingIOError as e:
+            except BlockingIOError:
                 time.sleep(0.5)
 
         logger.info(f"<-- {response}")
