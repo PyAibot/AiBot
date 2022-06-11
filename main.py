@@ -67,17 +67,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
     # TODO: 接收客户端数据的作用是什么？
 
-    @classmethod
-    def set_implicit_timeout(cls, wait_seconds: float, interval_seconds: float = 0.005) -> None:
-        """
-        设置找图色的隐式等待时间
-        :param wait_seconds:  等待时间；
-        :param interval_seconds: 轮询时间，默认 5 毫秒；
-        :return:
-        """
-        cls.wait_timeout = wait_seconds
-        cls.interval_timeout = interval_seconds
-
     # def __send_data(self, *args) -> str:
     #     logger.info(f"↓↓↓ {args}")
     #     args_len = ""
