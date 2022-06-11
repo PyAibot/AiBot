@@ -441,9 +441,9 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
             text_list.append(text)
         return text_list
 
-    def find_text(self, host: str, text: str, region: Region = None, scale: float = 1.0) -> list:
+    def find_text(self, host: str, text: str, region: Region = None, scale: float = 1.0) -> List[Point]:
         """
-        查找文字所在的坐标，返回坐标列表
+        查找文字所在的坐标，返回坐标列表（坐标是文本区域中心位置）
         :param host: OCR 服务地址；
         :param text: 要查找的文字；
         :param region: 识别区域，默认全屏；
@@ -453,10 +453,54 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         if not region:
             region = [0, 0, 0, 0]
 
+        # scale 仅支持区域识别
+        if region[2] == 0:
+            scale = 1.0
+
         text_info_list = self.__ocr_server(host, region, scale)
-        print(text_info_list)
-        # TODO：未完待续
-        return []
+
+        text_points = []
+        for text_info in text_info_list:
+            if text in text_info[-1][0]:
+                points, words_tuple = text_info
+
+                left, top, right, bottom = points
+
+                # 文本区域起点坐标
+                start_x = left[0]
+                start_y = left[1]
+                # 文本区域终点坐标
+                end_x = right[0]
+                end_y = right[1]
+                # 文本区域中心点据左上角的偏移量
+                # 可能指定文本只是部分文本，要计算出实际位置(x轴)
+                words: str = words_tuple[0]
+                width = end_x - start_x
+
+                # 单字符宽度
+                single_word_width = width / len(words)
+                # 文本在整体文本的起始位置
+                pos = words.find(text)
+
+                offset_x = pos * single_word_width + len(text) * single_word_width / 2
+                offset_y = (end_y - start_y) / 2
+
+                # [ { x: 108, y: 1153 } ]
+
+                # 计算文本区域中心坐标
+                if region[2] != 0:  # 缩放
+                    text_point = Point(
+                        x=int(region[0] + (start_x + offset_x) / scale),
+                        y=int(region[1] + (start_y + offset_y) / scale)
+                    )
+                else:
+                    text_point = Point(
+                        x=int(region[0] + (start_x + offset_x) * 2),
+                        y=int(region[1] + (start_y + offset_y) * 2)
+                    )
+                text_points.append(text_point)
+
+        return text_points
 
     # ##########
     #   其他   #
@@ -538,8 +582,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 class AiBotTestScript(AiBotMain):
     def script_main(self):
         self.show_toast("连接成功")
-        text = self.get_text("ocr.ai-bot.net")
-        print(text)
+        points = self.find_text("ocr.ai-bot.net", "端", region=(0, 990, 540, 1920))
+        print(points)
         while True:
             time.sleep(5)
             self.show_toast("恭喜发财")
