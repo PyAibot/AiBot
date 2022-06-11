@@ -58,6 +58,7 @@ def protect(*protected):
 
 class ThreadingTCPServer(socketserver.ThreadingTCPServer):
     daemon_threads = True
+    allow_reuse_address = True
 
 
 class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "execute")):
@@ -77,6 +78,25 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         cls.wait_timeout = wait_seconds
         cls.interval_timeout = interval_seconds
 
+    # def __send_data(self, *args) -> str:
+    #     logger.info(f"↓↓↓ {args}")
+    #     args_len = ""
+    #     args_text = ""
+    #
+    #     for argv in args:
+    #         argv = str(argv)
+    #         args_text += argv
+    #         args_len += str(len(bytes(argv, 'utf8'))) + "/"
+    #
+    #     data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
+    #
+    #     logger.info(f"--> {data}")
+    #     self.request.sendall(data)
+    #     # TODO: 阻塞模式下 OCR 最多一次返回 1432 字节数据，识别出的文字过长，会导致字节串被截断，且中文断开部分无法解码；
+    #     response = self.request.recv(65535).decode("utf8").strip()
+    #     logger.info(f"<-- {response}")
+    #     return response.split("/", 1)[-1]
+
     def __send_data(self, *args) -> str:
         logger.info(f"↓↓↓ {args}")
         args_len = ""
@@ -91,8 +111,16 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
         logger.info(f"--> {data}")
         self.request.sendall(data)
-        # TODO: OCR 返回字节长度不足，导致字节串被分成了2部分，且断开部分无法解码
-        response = self.request.recv(65535).decode("utf8").strip()
+
+        # TODO: 阻塞模式下 OCR 最多一次返回 1432 字节数据，识别出的文字过长，会导致字节串被截断，且中文断开部分无法解码；
+        #  先改成非阻塞模式，可一次接受所有数据
+        while True:
+            try:
+                response = self.request.recv(10240).decode("utf8").strip()
+                break
+            except BlockingIOError as e:
+                time.sleep(0.5)
+
         logger.info(f"<-- {response}")
         return response.split("/", 1)[-1]
 
@@ -472,6 +500,13 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         return self.__send_data("recents") == "true"
 
     def handle(self) -> None:
+        # 设置阻塞模式
+        self.request.setblocking(False)
+
+        # 设置缓冲区
+        # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 10240)
+        # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024)
+
         # 执行脚本
         self.script_main()
 
