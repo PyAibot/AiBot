@@ -11,7 +11,7 @@ from typing import Union, List, Optional, Tuple, Dict
 
 from loguru import logger
 
-LOG_PATH = Path(__file__).parent.resolve() / "logs"
+_LOG_PATH = Path(__file__).parent.resolve() / "logs"
 
 # rotation 文件分割，可按时间或者大小分割
 # retention 日志保留时间
@@ -21,17 +21,17 @@ LOG_PATH = Path(__file__).parent.resolve() / "logs"
 # logger.add(LOG_PATH / 'runtime.log', rotation='1 week')  # rotation 按时间分割，每周分割一次
 
 # 按时间分割，每日 12:00 分割一次，保留 15 天
-logger.add(LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days")
+logger.add(_LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days")
 
 Point = namedtuple("Point", ["x", "y"])
 
 _Point = Union[Point, Tuple[int, int]]
-Region = Tuple[int, int, int, int]
-Algorithm = Tuple[int, int, int]
-SubColors = List[Tuple[int, int, str]]
+_Region = Tuple[int, int, int, int]
+_Algorithm = Tuple[int, int, int]
+_SubColors = List[Tuple[int, int, str]]
 
 
-def protect(*protected):
+def _protect(*protected):
     """
     元类工厂，禁止类属性或方法被子类重写
     :param protected: 禁止重新的属性或方法
@@ -56,12 +56,12 @@ def protect(*protected):
     return Protect
 
 
-class ThreadingTCPServer(socketserver.ThreadingTCPServer):
+class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     daemon_threads = True
     allow_reuse_address = True
 
 
-class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "execute")):
+class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
     wait_timeout = 1  # seconds
     interval_timeout = 0.5  # seconds
 
@@ -113,7 +113,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         logger.info(f"<-- {response}")
         return response.split("/", 1)[-1]
 
-    def save_screenshot(self, image_name: str, region: Region = None, algorithm: Algorithm = None) -> Optional[str]:
+    def save_screenshot(self, image_name: str, region: _Region = None, algorithm: _Algorithm = None) -> Optional[str]:
         """
         保存截图，返回图片地址(手机中)或者 None
         :param image_name: 图片名称，保存在手机 /storage/emulated/0/Android/data/com.aibot.client/files/ 路径下；
@@ -172,7 +172,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         return response
 
     # TODO: 未经测试
-    def find_color(self, color: str, sub_colors: SubColors = None, region: Region = None,
+    def find_color(self, color: str, sub_colors: _SubColors = None, region: _Region = None,
                    similarity: float = 0.9) -> Optional[Point]:
         """
         获取指定色值的坐标点，返回坐标或者 None
@@ -217,7 +217,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
     #   找图相关   #
     # #############
     # TODO: 未经测试
-    def find_image(self, image_path, region: Region = None, algorithm: Algorithm = None,
+    def find_image(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
                    similarity: float = 0.9) -> Optional[Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标或者 None
@@ -255,7 +255,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         return None
 
     # TODO: 未经测试
-    def find_images_by_opencv(self, image_path, region: Region = None, algorithm: Algorithm = None,
+    def find_images_by_opencv(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
                               similarity: float = 0.9, multi: int = 1) -> List[Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标列表
@@ -300,7 +300,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         return []
 
     # TODO: 未经测试
-    def find_dynamic_image(self, interval_time, region: Region = None) -> List[Point]:
+    def find_dynamic_image(self, interval_time, region: _Region = None) -> List[Point]:
         """
         找动态图，对比同一张图在不同时刻是否发生变化，返回坐标列表
         :param interval_time: 前后时刻的间隔时间；
@@ -399,7 +399,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
 
         return text_info_list
 
-    def __ocr_server(self, host: str, region: Region = None, scale: float = 1.0) -> list:
+    def __ocr_server(self, host: str, region: _Region = None, scale: float = 1.0) -> list:
         """
         OCR 服务，通过 OCR 识别屏幕中文字
         :param host:
@@ -415,7 +415,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
             return []
         return self.__parse_ocr(response)
 
-    def get_text(self, host: str, region: Region = None, scale: float = 1.0) -> List[str]:
+    def get_text(self, host: str, region: _Region = None, scale: float = 1.0) -> List[str]:
         """
         通过 OCR 识别屏幕中的文字，返回文字列表
         :param host: OCR 服务地址；
@@ -430,7 +430,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
             text_list.append(text)
         return text_list
 
-    def find_text(self, host: str, text: str, region: Region = None, scale: float = 1.0) -> List[Point]:
+    def find_text(self, host: str, text: str, region: _Region = None, scale: float = 1.0) -> List[Point]:
         """
         查找文字所在的坐标，返回坐标列表（坐标是文本区域中心位置）
         :param host: OCR 服务地址；
@@ -601,19 +601,5 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=protect("handle", "ex
         *args, socket_address = address_info
 
         # 启动 Socket 服务
-        sock = ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
+        sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
         sock.serve_forever()
-
-
-class AiBotTestScript(AiBotMain):
-    def script_main(self):
-        self.show_toast("连接成功")
-        result = self.get_android_id()
-        print(result)
-        while True:
-            time.sleep(5)
-            self.show_toast("恭喜发财")
-
-
-if __name__ == '__main__':
-    AiBotTestScript.execute(3333)
