@@ -5,23 +5,23 @@ import time
 import re
 
 from ast import literal_eval
-from pathlib import Path
+# from pathlib import Path
 from collections import namedtuple
 from typing import Union, List, Optional, Tuple, Dict
 
-from loguru import logger
-
-_LOG_PATH = Path(__file__).parent.resolve() / "logs"
-
-# rotation 文件分割，可按时间或者大小分割
-# retention 日志保留时间
-# compression="zip" 压缩方式
-
-# logger.add(LOG_PATH / 'runtime.log', rotation='100 MB', retention='15 days')  按大小分割，日志保留 15 天
-# logger.add(LOG_PATH / 'runtime.log', rotation='1 week')  # rotation 按时间分割，每周分割一次
-
-# 按时间分割，每日 12:00 分割一次，保留 15 天
-logger.add(_LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days")
+# from loguru import logger
+#
+# _LOG_PATH = Path(__file__).parent.resolve() / "logs"
+#
+# # rotation 文件分割，可按时间或者大小分割
+# # retention 日志保留时间
+# # compression="zip" 压缩方式
+#
+# # logger.add(LOG_PATH / 'runtime.log', rotation='100 MB', retention='15 days')  按大小分割，日志保留 15 天
+# # logger.add(LOG_PATH / 'runtime.log', rotation='1 week')  # rotation 按时间分割，每周分割一次
+#
+# # 按时间分割，每日 12:00 分割一次，保留 15 天
+# logger.add(_LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days")
 
 Point = namedtuple("Point", ["x", "y"])
 
@@ -87,7 +87,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     #     return response.split("/", 1)[-1]
 
     def __send_data(self, *args) -> str:
-        logger.info(f"↓↓↓ {args}")
+        # logger.info(f"↓↓↓ {args}")
         args_len = ""
         args_text = ""
 
@@ -98,7 +98,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        logger.info(f"--> {data}")
+        # logger.info(f"--> {data}")
         self.request.sendall(data)
 
         # TODO: 阻塞模式下 OCR 最多一次返回 1432 字节数据，识别出的文字过长，会导致字节串被截断，且中文断开部分无法解码；
@@ -110,7 +110,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
             except BlockingIOError:
                 time.sleep(0.5)
 
-        logger.info(f"<-- {response}")
+        # logger.info(f"<-- {response}")
         return response.split("/", 1)[-1]
 
     def save_screenshot(self, image_name: str, region: _Region = None, algorithm: _Algorithm = None) -> Optional[str]:
