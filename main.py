@@ -62,7 +62,7 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
 
 
 class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
-    wait_timeout = 1  # seconds
+    wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
 
     # TODO: 接收客户端数据的作用是什么？
@@ -492,10 +492,60 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         return text_points
 
     # #############
-    #   其他操作   #
+    #   元素操作   #
+    ###############
+    def get_element_rect(self, xpath: str) -> Optional[Tuple[Point, Point]]:
+        """
+        获取元素位置，返回元素区域左上角和右下角坐标
+        :param xpath: xpath 路径
+        :return:
+        """
+        data = self.__send_data("getElementRect", xpath)
+        if data == "-1|-1|-1|-1":
+            return None
+        start_x, start_y, end_x, end_y = data.split("|")
+        return Point(x=start_x, y=start_y), Point(x=end_x, y=end_y)
+
+    def get_element_text(self, xpath: str) -> Optional[str]:
+        """
+        获取元素文本
+        :param xpath: xpath 路径
+        :return:
+        """
+        data = self.__send_data("getElementText", xpath)
+        if data == "null":
+            return None
+        return data
+
+    def set_element_text(self, xpath: str, text: str) -> bool:
+        """
+        设置元素文本
+        :param xpath:
+        :param text:
+        :return:
+        """
+        return self.__send_data("setElementText", xpath, text) == "true"
+
+    def click_element(self, xpath: str) -> bool:
+        """
+        点击元素
+        :param xpath:
+        :return:
+        """
+        return self.__send_data("clickElement", xpath) == "true"
+
+    def scroll_to_element(self, xpath: str) -> bool:
+        """
+        滚动到元素位置
+        :param xpath:
+        :return:
+        """
+        return self.__send_data("scrollElement", xpath) == "true"
+
+    # #############
+    #   设备操作   #
     # #############
 
-    # TODO: 无法启动
     def start_app(self, name: str) -> bool:
         """
         启动 APP
