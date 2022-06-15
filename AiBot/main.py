@@ -589,6 +589,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param local_path: 电脑本地文件存储路径
         :return:
         """
+        remote_path = "/storage/emulated/0/" + remote_path
+
         data = self.__pull_file("pullFile", remote_path)
         if data == b"null":
             return False
