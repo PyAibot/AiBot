@@ -67,27 +67,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
     # TODO: 接收客户端数据的作用是什么？
 
-    # def __send_data(self, *args) -> str:
-    #     logger.info(f"↓↓↓ {args}")
-    #     args_len = ""
-    #     args_text = ""
-    #
-    #     for argv in args:
-    #         argv = str(argv)
-    #         args_text += argv
-    #         args_len += str(len(bytes(argv, 'utf8'))) + "/"
-    #
-    #     data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
-    #
-    #     logger.info(f"--> {data}")
-    #     self.request.sendall(data)
-    #     # TODO: 阻塞模式下 OCR 最多一次返回 1432 字节数据，识别出的文字过长，会导致字节串被截断，且中文断开部分无法解码；
-    #     response = self.request.recv(65535).decode("utf8").strip()
-    #     logger.info(f"<-- {response}")
-    #     return response.split("/", 1)[-1]
-
     def __send_data(self, *args) -> str:
-        # logger.info(f"↓↓↓ {args}")
         args_len = ""
         args_text = ""
 
@@ -98,20 +78,57 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        # logger.info(f"--> {data}")
         self.request.sendall(data)
 
-        # TODO: 阻塞模式下 OCR 最多一次返回 1432 字节数据，识别出的文字过长，会导致字节串被截断，且中文断开部分无法解码；
-        #  先改成非阻塞模式，可一次接受所有数据
-        while True:
-            try:
-                response = self.request.recv(10240).decode("utf8").strip()
-                break
-            except BlockingIOError:
-                time.sleep(0.5)
+        data_length, data = self.request.recv(65535).split(b"/", 1)
 
-        # logger.info(f"<-- {response}")
-        return response.split("/", 1)[-1]
+        while int(data_length) > len(data):
+            data += self.request.recv(65535)
+
+        return data.decode("utf8").strip()
+
+    def __send_file(self, func_name: str, to_path: str, file: bytes):
+        func_name = bytes(func_name, "utf8")
+        to_path = bytes(to_path, "utf8")
+
+        bytes_data = b""
+        bytes_data += bytes(len(func_name)) + b"/"  # func_name 字节长度
+        bytes_data += bytes(len(to_path)) + b"/"  # to_path 字节长度
+        bytes_data += bytes(len(file)) + b"\n"  # file 字节长度
+        bytes_data += func_name
+        bytes_data += to_path
+        bytes_data += file
+
+        self.request.sendall(bytes_data)
+
+        response = self.request.recv(65535)
+
+        data_length, data = response.split(b"/", 1)
+
+        while int(data_length) > len(data):
+            data += self.request.recv(65535)
+
+        return data.decode("utf8").strip()
+
+    def __pull_file(self, *args) -> bytes:
+        args_len = ""
+        args_text = ""
+
+        for argv in args:
+            argv = str(argv)
+            args_text += argv
+            args_len += str(len(bytes(argv, 'utf8'))) + "/"
+
+        data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
+
+        self.request.sendall(data)
+
+        data_length, data = self.request.recv(65535).split(b"/", 1)
+
+        while int(data_length) > len(data):
+            data += self.request.recv(65535)
+
+        return data
 
     def save_screenshot(self, image_name: str, region: _Region = None, algorithm: _Algorithm = None) -> Optional[str]:
         """
@@ -543,6 +560,43 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         return self.__send_data("scrollElement", xpath) == "true"
 
     # #############
+    #   文件传输   #
+    # #############
+    def push_file(self, origin_path: str, to_path: str) -> bool:
+        """
+        将电脑文件传输到手机端
+        :param origin_path: 源文件路径
+        :param to_path: 目标存储路径
+        :return:
+        """
+        to_path = "/storage/emulated/0/" + to_path
+
+        try:
+            file = open(origin_path, "r")
+            data = file.read()
+        except UnicodeDecodeError:
+            file = open(origin_path, "rb")
+            data = file.read()
+
+        file.close()
+        return self.__send_file("pushFile", to_path, data) == "true"
+
+    def pull_file(self, remote_path: str, local_path: str) -> bool:
+        """
+        将手机文件传输到电脑端
+        :param remote_path: 手机端文件路径
+        :param local_path: 电脑本地文件存储路径
+        :return:
+        """
+        data = self.__pull_file("pullFile", remote_path)
+        if data == b"null":
+            return False
+
+        with open(local_path, "wb") as file:
+            file.write(data)
+        return True
+
+    # #############
     #   设备操作   #
     # #############
 
@@ -621,11 +675,11 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     ############
     def handle(self) -> None:
         # 设置阻塞模式
-        self.request.setblocking(False)
+        # self.request.setblocking(False)
 
         # 设置缓冲区
-        # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 10240)
-        # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024)
+        # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65535)
+        # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 65535)
 
         # 执行脚本
         self.script_main()
