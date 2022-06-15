@@ -99,6 +99,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         bytes_data += to_path
         bytes_data += file
 
+        # TODO: 大于 65535 的数据如何拆包发送
         self.request.sendall(bytes_data)
 
         response = self.request.recv(65535)
