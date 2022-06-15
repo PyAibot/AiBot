@@ -122,9 +122,9 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :return:
 
         # 区域相关参数
-        region = [0, 0, 0, 0] 按元素顺序分别代表：起点x、起点y、终点、终点y，最终得到一个矩形。
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
         # 算法相关参数
-        algorithm = [0, 0, 0] # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
         threshold 和 max_val 同为 255 时灰度处理.
         0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
         1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
