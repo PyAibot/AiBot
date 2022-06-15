@@ -703,7 +703,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         # 获取 IPv4 可用地址
         address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
             0]
-        *args, socket_address = address_info
+        *_, socket_address = address_info
 
         # 启动 Socket 服务
         sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
