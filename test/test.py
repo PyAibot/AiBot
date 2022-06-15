@@ -20,7 +20,8 @@ class CustomScript(AiBotMain):
     # 注意：此方法是脚本执行入口
     def script_main(self):
         self.show_toast("连接成功")
-        result = self.get_text("ocr.ai-bot.net")
+        path = r"D:\PycharmProjects\AiBot\test\单标签.png"
+        result = self.push_file(path, "/4.png")
         print(result)
         while True:
             self.show_toast("恭喜发财")

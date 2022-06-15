@@ -91,10 +91,12 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         func_name = bytes(func_name, "utf8")
         to_path = bytes(to_path, "utf8")
 
-        bytes_data = b""
-        bytes_data += bytes(len(func_name)) + b"/"  # func_name 字节长度
-        bytes_data += bytes(len(to_path)) + b"/"  # to_path 字节长度
-        bytes_data += bytes(len(file)) + b"\n"  # file 字节长度
+        str_data = ""
+        str_data += str(len(func_name)) + "/"  # func_name 字节长度
+        str_data += str(len(to_path)) + "/"  # to_path 字节长度
+        str_data += str(len(file)) + "\n"  # file 字节长度
+
+        bytes_data = bytes(str_data, "utf8")
         bytes_data += func_name
         bytes_data += to_path
         bytes_data += file
@@ -682,7 +684,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         # 设置缓冲区
         # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65535)
-        # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 65535)
+        self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024 * 1024 * 10)  # 发送缓冲区 10M
 
         # 执行脚本
         self.script_main()
