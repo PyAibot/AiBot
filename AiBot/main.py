@@ -212,10 +212,9 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         # 超时
         return None
 
-    # TODO: 未完待续
-    def compare_color(self):
-        """比较指定坐标点的颜色值"""
-        raise NotImplementedError()
+    # def compare_color(self):
+    #     """比较指定坐标点的颜色值"""
+    #     raise NotImplementedError()
 
     # #############
     #   找图相关   #
