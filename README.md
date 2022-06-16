@@ -56,6 +56,7 @@ class CustomScript(AiBotMain):
 
 
 if __name__ == '__main__':
+    # 注意：此处监听的端口号，必须和手机端的脚本端口号一致；
     # 监听 3333 号端口
     CustomScript.execute(3333)
 ```
