@@ -5,23 +5,8 @@ import time
 import re
 
 from ast import literal_eval
-# from pathlib import Path
 from collections import namedtuple
 from typing import Union, List, Optional, Tuple, Dict
-
-# from loguru import logger
-#
-# _LOG_PATH = Path(__file__).parent.resolve() / "logs"
-#
-# # rotation 文件分割，可按时间或者大小分割
-# # retention 日志保留时间
-# # compression="zip" 压缩方式
-#
-# # logger.add(LOG_PATH / 'runtime.log', rotation='100 MB', retention='15 days')  按大小分割，日志保留 15 天
-# # logger.add(LOG_PATH / 'runtime.log', rotation='1 week')  # rotation 按时间分割，每周分割一次
-#
-# # 按时间分割，每日 12:00 分割一次，保留 15 天
-# logger.add(_LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days")
 
 Point = namedtuple("Point", ["x", "y"])
 
@@ -64,8 +49,6 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
 class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
-
-    # TODO: 接收客户端数据的作用是什么？
 
     def __send_data(self, *args) -> str:
         args_len = ""
@@ -193,7 +176,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
             return None
         return response
 
-    # TODO: 未经测试
     def find_color(self, color: str, sub_colors: _SubColors = None, region: _Region = None,
                    similarity: float = 0.9) -> Optional[Point]:
         """
@@ -233,12 +215,11 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     # TODO: 未完待续
     def compare_color(self):
         """比较指定坐标点的颜色值"""
-        return NotImplementedError()
+        raise NotImplementedError()
 
     # #############
     #   找图相关   #
     # #############
-    # TODO: 未经测试
     def find_image(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
                    similarity: float = 0.9) -> Optional[Point]:
         """
@@ -276,7 +257,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         # 超时
         return None
 
-    # TODO: 未经测试
     def find_images_by_opencv(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
                               similarity: float = 0.9, multi: int = 1) -> List[Point]:
         """
@@ -321,7 +301,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         # 超时
         return []
 
-    # TODO: 未经测试
     def find_dynamic_image(self, interval_time, region: _Region = None) -> List[Point]:
         """
         找动态图，对比同一张图在不同时刻是否发生变化，返回坐标列表
@@ -353,7 +332,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     # ################
     #   坐标操作相关   #
     # ################
-    # TODO: 未经测试
     def click(self, point: _Point) -> bool:
         """
         点击坐标
@@ -362,7 +340,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("click", point[0], point[1]) == "true"
 
-    # TODO: 未经测试
     def long_click(self, point: _Point, duration: float) -> bool:
         """
         长按坐标
@@ -372,7 +349,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("longClick", point[0], point[1], duration * 1000) == "true"
 
-    # TODO: 未经测试
     def swipe(self, start_point: _Point, end_point: _Point, duration: float) -> bool:
         """
         滑动坐标
@@ -384,7 +360,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         return self.__send_data("swipe", start_point[0], start_point[1], end_point[0], end_point[1],
                                 duration * 1000) == "true"
 
-    # TODO: 未经测试
     def gesture(self, gesture_path: List[_Point], duration: float) -> bool:
         """
         执行手势
