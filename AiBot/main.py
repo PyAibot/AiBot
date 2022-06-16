@@ -682,6 +682,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         # 执行脚本
         self.script_main()
+        # 脚本执行完毕后，阻塞
+        self.request.recv(1024)
 
     @abc.abstractmethod
     def script_main(self):
