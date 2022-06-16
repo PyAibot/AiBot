@@ -78,9 +78,12 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
+        print(rf"---> {data}")
         self.request.sendall(data)
 
         data_length, data = self.request.recv(65535).split(b"/", 1)
+
+        print(rf"<--- {data}")
 
         while int(data_length) > len(data):
             data += self.request.recv(65535)
