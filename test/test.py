@@ -20,12 +20,13 @@ class CustomScript(AiBotMain):
     # 注意：此方法是脚本执行入口
     def script_main(self):
         self.show_toast("连接成功")
-        path = r"D:\PycharmProjects\AiBot\test\单标签.png"
-        result = self.push_file(path, "/4.png")
+        # path = r"/Users/chenxun/PycharmProjects/Aibot/test/调用链.md"
+        path = r"/Users/chenxun/PycharmProjects/Aibot/test/1111.png"
+        result = self.push_file(path, "1111.png")
         print(result)
         while True:
-            self.show_toast("恭喜发财")
             time.sleep(5)
+            self.show_toast("恭喜发财")
 
 
 # 6. 启动服务，执行脚本

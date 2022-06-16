@@ -101,7 +101,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         bytes_data += to_path
         bytes_data += file
 
-        # TODO: 大于 65535 的数据如何拆包发送
         self.request.sendall(bytes_data)
 
         response = self.request.recv(65535)
@@ -574,14 +573,9 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         to_path = "/storage/emulated/0/" + to_path
 
-        try:
-            file = open(origin_path, "r")
-            data = file.read()
-        except UnicodeDecodeError:
-            file = open(origin_path, "rb")
+        with open(origin_path, "rb") as file:
             data = file.read()
 
-        file.close()
         return self.__send_file("pushFile", to_path, data) == "true"
 
     def pull_file(self, remote_path: str, local_path: str) -> bool:
@@ -684,7 +678,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         # 设置缓冲区
         # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65535)
-        self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024 * 1024 * 10)  # 发送缓冲区 10M
+        self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024 * 1024)  # 发送缓冲区 10M
 
         # 执行脚本
         self.script_main()
