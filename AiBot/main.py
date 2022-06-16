@@ -556,11 +556,11 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("clickElement", xpath) == "true"
 
-    def scroll_element(self, xpath: str, direction: int) -> bool:
+    def scroll_element(self, xpath: str, direction: int = 0) -> bool:
         """
-        滚动元素
+        滚动元素，0 向上滑动，1 向下滑动
         :param xpath: xpath 路径
-        :param direction: 滚动方向，0 向前滑动，1 向后滑动
+        :param direction: 滚动方向，0 向上滑动，1 向下滑动
         :return:
         """
         return self.__send_data("scrollElement", xpath, direction) == "true"
