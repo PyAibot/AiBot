@@ -1,12 +1,30 @@
 import abc
+import copy
+import os
 import socket
 import socketserver
+import sys
 import time
 import re
 
 from ast import literal_eval
 from collections import namedtuple
+from pathlib import Path
 from typing import Union, List, Optional, Tuple, Dict
+
+from loguru import logger
+
+# _LOG_PATH = Path(__file__).parent.resolve() / "logs"
+
+# # rotation 文件分割，可按时间或者大小分割
+# # retention 日志保留时间
+# # compression="zip" 压缩方式
+#
+# # logger.add(LOG_PATH / 'runtime.log', rotation='100 MB', retention='15 days')  按大小分割，日志保留 15 天
+# # logger.add(LOG_PATH / 'runtime.log', rotation='1 week')  # rotation 按时间分割，每周分割一次
+#
+# # 按时间分割，每日 12:00 分割一次，保留 15 天
+# logger.add(_LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days")
 
 Point = namedtuple("Point", ["x", "y"])
 
@@ -50,6 +68,21 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
 
+    log_path = ""
+    log_level = "INFO"
+
+    def __init__(self, request, client_address, server):
+        self.log = logger
+
+        if self.log_path:
+            self.log.add(self.log_path, level=self.log_level.upper(), rotation="12:00",
+                         retention="15 days")
+        else:
+            self.log.remove()
+            self.log.add(sys.stdout, level=self.log_level.upper())
+
+        super().__init__(request, client_address, server)
+
     def __send_data(self, *args) -> str:
         args_len = ""
         args_text = ""
@@ -61,12 +94,12 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        print(rf"---> {data}")
+        self.log.debug(rf"---> {data}")
         self.request.sendall(data)
 
         data_length, data = self.request.recv(65535).split(b"/", 1)
 
-        print(rf"<--- {data}")
+        self.log.debug(rf"<--- {data}")
 
         while int(data_length) > len(data):
             data += self.request.recv(65535)
@@ -185,6 +218,19 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param region: 在指定区域内找色，默认全屏；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
         :return:
+
+        # 区域相关参数
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        # 算法相关参数
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        threshold 和 max_val 同为 255 时灰度处理.
+        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
+        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
+        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
+        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
+        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
+        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
+        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
         if not region:
             region = [0, 0, 0, 0]
@@ -229,7 +275,18 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
         :return:
 
-        region 与 algorithm 参数，和 self.save_screenshot() 方法的同名参数一致，此处不再赘述；
+        # 区域相关参数
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        # 算法相关参数
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        threshold 和 max_val 同为 255 时灰度处理.
+        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
+        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
+        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
+        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
+        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
+        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
+        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
         if not region:
             region = [0, 0, 0, 0]
@@ -256,6 +313,36 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         # 超时
         return None
 
+    def find_image_by_opencv(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
+                             similarity: float = 0.9) -> Optional[Point]:
+        """
+        寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回图片坐标或者 None
+        与 self.find_image() 基本一致，采用 OpenCV 算法
+        :param image_path: 图片的绝对路径；
+        :param region: 从指定区域中找图，默认全屏；
+        :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
+        :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param multi: 目标数量，默认为 1，找到 1 个目标后立即结束；
+        :return:
+
+        # 区域相关参数
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        # 算法相关参数
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        threshold 和 max_val 同为 255 时灰度处理.
+        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
+        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
+        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
+        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
+        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
+        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
+        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
+        """
+        result = self.find_images_by_opencv(image_path, region, algorithm, similarity, multi=1)
+        if not result:
+            return None
+        return result[0]
+
     def find_images_by_opencv(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
                               similarity: float = 0.9, multi: int = 1) -> List[Point]:
         """
@@ -268,7 +355,18 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param multi: 目标数量，默认为 1，找到 1 个目标后立即结束；
         :return:
 
-        region 与 algorithm 参数，和 self.save_screenshot() 方法的同名参数一致，此处不再赘述；
+        # 区域相关参数
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        # 算法相关参数
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        threshold 和 max_val 同为 255 时灰度处理.
+        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
+        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
+        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
+        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
+        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
+        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
+        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
         if not region:
             region = [0, 0, 0, 0]
@@ -306,6 +404,9 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param interval_time: 前后时刻的间隔时间；
         :param region: 在指定区域找图，默认全屏；
         :return:
+
+        # 区域相关参数
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
         """
         if not region:
             region = [0, 0, 0, 0]
