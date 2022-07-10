@@ -6,10 +6,10 @@ import time
 import re
 
 from ast import literal_eval
-from collections import namedtuple
 from typing import Union, List, Optional, Tuple, Dict
 
 from loguru import logger
+
 
 # _LOG_PATH = Path(__file__).parent.resolve() / "logs"
 
@@ -23,9 +23,29 @@ from loguru import logger
 # # 按时间分割，每日 12:00 分割一次，保留 15 天
 # logger.add(_LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days")
 
-Point = namedtuple("Point", ["x", "y"])
 
-_Point = Union[Point, Tuple[int, int]]
+class _Point:
+    def __init__(self, x, y, driver: "AiBotMain"):
+        self.x = x
+        self.y = y
+        self.__driver = driver
+
+    def click(self):
+        self.__driver.click(self)
+
+    def __getitem__(self, item):
+        if item == 0:
+            return self.x
+        elif item == 1:
+            return self.y
+        else:
+            raise IndexError("list index out of range")
+
+    def __repr__(self):
+        return f"Point(x={self.x}, y={self.y})"
+
+
+_Point_ = Union[_Point, Tuple[int, int]]
 _Region = Tuple[int, int, int, int]
 _Algorithm = Tuple[int, int, int]
 _SubColors = List[Tuple[int, int, str]]
@@ -195,7 +215,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     # #############
     #   色值相关   #
     # #############
-    def get_color(self, point: _Point) -> Optional[str]:
+    def get_color(self, point: _Point_) -> Optional[str]:
         """
         获取指定坐标点的色值，返回色值字符串(#008577)或者 None
         :param point: 坐标点；
@@ -207,7 +227,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         return response
 
     def find_color(self, color: str, sub_colors: _SubColors = None, region: _Region = None,
-                   similarity: float = 0.9) -> Optional[Point]:
+                   similarity: float = 0.9) -> Optional[_Point]:
         """
         获取指定色值的坐标点，返回坐标或者 None
         :param color: 颜色字符串，必须以 # 开头，例如：#008577；
@@ -251,7 +271,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
             else:
                 # 找色成功
                 x, y = response.split("|")
-                return Point(x=float(x), y=float(y))
+                return _Point(x=float(x), y=float(y), driver=self)
         # 超时
         return None
 
@@ -263,7 +283,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     #   找图相关   #
     # #############
     def find_image(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
-                   similarity: float = 0.9) -> Optional[Point]:
+                   similarity: float = 0.9) -> Optional[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标或者 None
         :param image_path: 图片的绝对路径；
@@ -306,12 +326,12 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
             else:
                 # 找图成功，返回图片左上角坐标
                 x, y = response.split("|")
-                return Point(x=float(x), y=float(y))
+                return _Point(x=float(x), y=float(y), driver=self)
         # 超时
         return None
 
     def find_image_by_opencv(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
-                             similarity: float = 0.9) -> Optional[Point]:
+                             similarity: float = 0.9) -> Optional[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回图片坐标或者 None
         与 self.find_image() 基本一致，采用 OpenCV 算法
@@ -340,7 +360,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         return result[0]
 
     def find_images_by_opencv(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
-                              similarity: float = 0.9, multi: int = 1) -> List[Point]:
+                              similarity: float = 0.9, multi: int = 1) -> List[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标列表
         与 self.find_image() 基本一致，采用 OpenCV 算法，并且可找多个目标。
@@ -389,12 +409,12 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
                 point_list = []
                 for point_str in image_points:
                     x, y = point_str.split("|")
-                    point_list.append(Point(x=float(x), y=float(y)))
+                    point_list.append(_Point(x=float(x), y=float(y), driver=self))
                 return point_list
         # 超时
         return []
 
-    def find_dynamic_image(self, interval_time, region: _Region = None) -> List[Point]:
+    def find_dynamic_image(self, interval_time, region: _Region = None) -> List[_Point]:
         """
         找动态图，对比同一张图在不同时刻是否发生变化，返回坐标列表
         :param interval_time: 前后时刻的间隔时间；
@@ -420,7 +440,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
                 point_list = []
                 for point_str in image_points:
                     x, y = point_str.split("|")
-                    point_list.append(Point(x=float(x), y=float(y)))
+                    point_list.append(_Point(x=float(x), y=float(y), driver=self))
                 return point_list
         # 超时
         return []
@@ -428,7 +448,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     # ################
     #   坐标操作相关   #
     # ################
-    def click(self, point: _Point) -> bool:
+    def click(self, point: _Point_) -> bool:
         """
         点击坐标
         :param point: 坐标；
@@ -436,7 +456,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("click", point[0], point[1]) == "true"
 
-    def long_click(self, point: _Point, duration: float) -> bool:
+    def long_click(self, point: _Point_, duration: float) -> bool:
         """
         长按坐标
         :param point: 坐标；
@@ -445,7 +465,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("longClick", point[0], point[1], duration * 1000) == "true"
 
-    def swipe(self, start_point: _Point, end_point: _Point, duration: float) -> bool:
+    def swipe(self, start_point: _Point_, end_point: _Point_, duration: float) -> bool:
         """
         滑动坐标
         :param start_point: 起始坐标；
@@ -456,7 +476,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         return self.__send_data("swipe", start_point[0], start_point[1], end_point[0], end_point[1],
                                 duration * 1000) == "true"
 
-    def gesture(self, gesture_path: List[_Point], duration: float) -> bool:
+    def gesture(self, gesture_path: List[_Point_], duration: float) -> bool:
         """
         执行手势
         :param gesture_path: 手势路径，由一系列坐标点组成
@@ -523,7 +543,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
             text_list.append(text)
         return text_list
 
-    def find_text(self, host: str, text: str, region: _Region = None, scale: float = 1.0) -> List[Point]:
+    def find_text(self, host: str, text: str, region: _Region = None, scale: float = 1.0) -> List[_Point]:
         """
         查找文字所在的坐标，返回坐标列表（坐标是文本区域中心位置）
         :param host: OCR 服务地址；
@@ -571,14 +591,16 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
                 # 计算文本区域中心坐标
                 if region[2] != 0:  # 缩放
-                    text_point = Point(
+                    text_point = _Point(
                         x=int(region[0] + (start_x + offset_x) / scale),
-                        y=int(region[1] + (start_y + offset_y) / scale)
+                        y=int(region[1] + (start_y + offset_y) / scale),
+                        driver=self
                     )
                 else:
-                    text_point = Point(
+                    text_point = _Point(
                         x=int(region[0] + (start_x + offset_x) * 2),
-                        y=int(region[1] + (start_y + offset_y) * 2)
+                        y=int(region[1] + (start_y + offset_y) * 2),
+                        driver=self
                     )
                 text_points.append(text_point)
 
@@ -587,7 +609,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     # #############
     #   元素操作   #
     ###############
-    def get_element_rect(self, xpath: str) -> Optional[Tuple[Point, Point]]:
+    def get_element_rect(self, xpath: str) -> Optional[Tuple[_Point, _Point]]:
         """
         获取元素位置，返回元素区域左上角和右下角坐标
         :param xpath: xpath 路径
@@ -597,7 +619,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         if data == "-1|-1|-1|-1":
             return None
         start_x, start_y, end_x, end_y = data.split("|")
-        return Point(x=start_x, y=start_y), Point(x=end_x, y=end_y)
+        return _Point(x=start_x, y=start_y, driver=self), _Point(x=end_x, y=end_y, driver=self)
 
     def get_element_text(self, xpath: str) -> Optional[str]:
         """
