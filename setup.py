@@ -6,6 +6,7 @@ package_data = {
 }
 
 install_requires = [
+    "loguru~=0.6.0"
 ]
 
 setup_kwargs = {
