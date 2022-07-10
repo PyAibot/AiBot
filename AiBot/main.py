@@ -319,7 +319,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param region: 从指定区域中找图，默认全屏；
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
-        :param multi: 目标数量，默认为 1，找到 1 个目标后立即结束；
         :return:
 
         # 区域相关参数
