@@ -87,24 +87,19 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
     log_path = ""
     log_level = "INFO"
-    log_format = ""
+    log_format = "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | " + \
+                 "<level>{level: <8}</level> | " + \
+                 "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
 
     def __init__(self, request, client_address, server):
         self.log = logger
 
         if self.log_path:
-            if self.log_format:
-                self.log.add(self.log_path, level=self.log_level.upper(), rotation="12:00", retention="15 days",
-                             format=self.log_format)
-            else:
-                self.log.add(self.log_path, level=self.log_level.upper(), rotation="12:00", retention="15 days")
+            self.log.add(self.log_path, level=self.log_level.upper(), rotation="12:00", retention="15 days",
+                         format=self.log_format)
         else:
             self.log.remove()
-
-            if self.log_format:
-                self.log.add(sys.stdout, level=self.log_level.upper(), format=self.log_format)
-            else:
-                self.log.add(sys.stdout, level=self.log_level.upper())
+            self.log.add(sys.stdout, level=self.log_level.upper(), format=self.log_format)
 
         super().__init__(request, client_address, server)
 
