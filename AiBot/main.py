@@ -2,6 +2,7 @@ import abc
 import socket
 import socketserver
 import sys
+import threading
 import time
 import re
 
@@ -92,6 +93,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
                  "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
 
     def __init__(self, request, client_address, server):
+        self._lock = threading.Lock()
         self.log = logger
 
         if self.log_path:
@@ -114,10 +116,10 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        self.log.debug(rf"---> {data}")
-        self.request.sendall(data)
-
-        data_length, data = self.request.recv(65535).split(b"/", 1)
+        with self._lock:
+            self.log.debug(rf"---> {data}")
+            self.request.sendall(data)
+            data_length, data = self.request.recv(65535).split(b"/", 1)
 
         self.log.debug(rf"<--- {data}")
 
@@ -126,7 +128,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         return data.decode("utf8").strip()
 
-    def __send_file(self, func_name: str, to_path: str, file: bytes):
+    def __push_file(self, func_name: str, to_path: str, file: bytes):
         func_name = bytes(func_name, "utf8")
         to_path = bytes(to_path, "utf8")
 
@@ -140,14 +142,13 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         bytes_data += to_path
         bytes_data += file
 
-        self.request.sendall(bytes_data)
+        with self._lock:
+            self.request.sendall(bytes_data)
 
-        response = self.request.recv(65535)
+            data_length, data = self.request.recv(65535).split(b"/", 1)
 
-        data_length, data = response.split(b"/", 1)
-
-        while int(data_length) > len(data):
-            data += self.request.recv(65535)
+            while int(data_length) > len(data):
+                data += self.request.recv(65535)
 
         return data.decode("utf8").strip()
 
@@ -162,12 +163,13 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        self.request.sendall(data)
+        with self._lock:
+            self.request.sendall(data)
 
-        data_length, data = self.request.recv(65535).split(b"/", 1)
+            data_length, data = self.request.recv(65535).split(b"/", 1)
 
-        while int(data_length) > len(data):
-            data += self.request.recv(65535)
+            while int(data_length) > len(data):
+                data += self.request.recv(65535)
 
         return data
 
@@ -676,7 +678,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         with open(origin_path, "rb") as file:
             data = file.read()
 
-        return self.__send_file("pushFile", to_path, data) == "true"
+        return self.__push_file("pushFile", to_path, data) == "true"
 
     def pull_file(self, remote_path: str, local_path: str) -> bool:
         """
