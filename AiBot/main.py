@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 import re
+import warnings
 
 from ast import literal_eval
 from typing import Union, List, Optional, Tuple, Dict
@@ -31,8 +32,14 @@ class _Point:
         self.y = y
         self.__driver = driver
 
-    def click(self):
-        self.__driver.click(self)
+    def click(self, offset_x: float = 0, offset_y: float = 0):
+        """
+        点击坐标
+        :param offset_x: 坐标 x 轴偏移量；
+        :param offset_y: 坐标 y 轴偏移量；
+        :return:
+        """
+        self.__driver.click(self, offset_x=offset_x, offset_y=offset_y)
 
     def __getitem__(self, item):
         if item == 0:
@@ -453,22 +460,31 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     # ################
     #   坐标操作相关   #
     # ################
-    def click(self, point: _Point_) -> bool:
+    def click(self, point: _Point_, offset_x: float = 0, offset_y: float = 0) -> bool:
         """
         点击坐标
         :param point: 坐标；
+        :param offset_x: 坐标 x 轴偏移量；
+        :param offset_y: 坐标 y 轴偏移量；
         :return:
         """
-        return self.__send_data("click", point[0], point[1]) == "true"
+        if (point.x + offset_x < 0) or (point.y + offset_y < 0):
+            warnings.warn("实际坐标小于了 0，{'x': '{0}', 'y': '{1}'}".format(point.x + offset_x, point.y + offset_y))
+        return self.__send_data("click", point[0] + offset_x, point[1] + offset_y) == "true"
 
-    def long_click(self, point: _Point_, duration: float) -> bool:
+    def long_click(self, point: _Point_, duration: float, offset_x: float = 0, offset_y: float = 0) -> bool:
         """
         长按坐标
         :param point: 坐标；
         :param duration: 按住时长，单位秒；
+        :param offset_x: 坐标 x 轴偏移量；
+        :param offset_y: 坐标 y 轴偏移量；
         :return:
         """
-        return self.__send_data("longClick", point[0], point[1], duration * 1000) == "true"
+        if (point.x + offset_x < 0) or (point.y + offset_y < 0):
+            warnings.warn("实际坐标小于了 0，{'x': '{0}', 'y': '{1}'}".format(point.x + offset_x, point.y + offset_y))
+
+        return self.__send_data("longClick", point[0] + offset_x, point[1] + offset_y, duration * 1000) == "true"
 
     def swipe(self, start_point: _Point_, end_point: _Point_, duration: float) -> bool:
         """
