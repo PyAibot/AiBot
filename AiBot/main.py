@@ -468,8 +468,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param offset_y: 坐标 y 轴偏移量；
         :return:
         """
-        if (point.x + offset_x < 0) or (point.y + offset_y < 0):
-            warnings.warn("实际坐标小于了 0，{'x': '{0}', 'y': '{1}'}".format(point.x + offset_x, point.y + offset_y))
         return self.__send_data("click", point[0] + offset_x, point[1] + offset_y) == "true"
 
     def long_click(self, point: _Point_, duration: float, offset_x: float = 0, offset_y: float = 0) -> bool:
@@ -481,9 +479,6 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param offset_y: 坐标 y 轴偏移量；
         :return:
         """
-        if (point.x + offset_x < 0) or (point.y + offset_y < 0):
-            warnings.warn("实际坐标小于了 0，{'x': '{0}', 'y': '{1}'}".format(point.x + offset_x, point.y + offset_y))
-
         return self.__send_data("longClick", point[0] + offset_x, point[1] + offset_y, duration * 1000) == "true"
 
     def swipe(self, start_point: _Point_, end_point: _Point_, duration: float) -> bool:
