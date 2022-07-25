@@ -5,7 +5,6 @@ import sys
 import threading
 import time
 import re
-import warnings
 
 from ast import literal_eval
 from typing import Union, List, Optional, Tuple, Dict
@@ -238,14 +237,16 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
             return None
         return response
 
-    def find_color(self, color: str, sub_colors: _SubColors = None, region: _Region = None,
-                   similarity: float = 0.9) -> Optional[_Point]:
+    def find_color(self, color: str, sub_colors: _SubColors = None, region: _Region = None, similarity: float = 0.9,
+                   wait_time: float = None, interval_time: float = None) -> Optional[_Point]:
         """
         获取指定色值的坐标点，返回坐标或者 None
         :param color: 颜色字符串，必须以 # 开头，例如：#008577；
         :param sub_colors: 辅助定位的其他颜色；
         :param region: 在指定区域内找色，默认全屏；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
 
         # 区域相关参数
@@ -261,6 +262,12 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
         6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
         if not region:
             region = [0, 0, 0, 0]
 
@@ -274,12 +281,12 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         else:
             sub_colors_str = "null"
 
-        end_time = time.time() + self.wait_timeout
+        end_time = time.time() + wait_time
         while time.time() < end_time:
             response = self.__send_data("findColor", color, sub_colors_str, *region, similarity)
             # 找色失败
             if response == "-1.0|-1.0":
-                time.sleep(self.interval_timeout)
+                time.sleep(interval_time)
             else:
                 # 找色成功
                 x, y = response.split("|")
@@ -294,14 +301,16 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     # #############
     #   找图相关   #
     # #############
-    def find_image(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
-                   similarity: float = 0.9) -> Optional[_Point]:
+    def find_image(self, image_path, region: _Region = None, algorithm: _Algorithm = None, similarity: float = 0.9,
+                   wait_time: float = None, interval_time: float = None) -> Optional[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标或者 None
         :param image_path: 图片的绝对路径；
         :param region: 从指定区域中找图，默认全屏；
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
 
         # 区域相关参数
@@ -317,6 +326,12 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
         6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
         if not region:
             region = [0, 0, 0, 0]
 
@@ -328,13 +343,13 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
                 threshold = 127
                 max_val = 255
 
-        end_time = time.time() + self.wait_timeout
+        end_time = time.time() + wait_time
         while time.time() < end_time:
             response = self.__send_data("findImage", image_path, *region, similarity,
                                         algorithm_type, threshold, max_val)
             # 找图失败
             if response == "-1.0|-1.0":
-                time.sleep(self.interval_timeout)
+                time.sleep(interval_time)
             else:
                 # 找图成功，返回图片左上角坐标
                 x, y = response.split("|")
@@ -343,7 +358,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         return None
 
     def find_image_by_opencv(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
-                             similarity: float = 0.9) -> Optional[_Point]:
+                             similarity: float = 0.9,
+                             wait_time: float = None, interval_time: float = None) -> Optional[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回图片坐标或者 None
         与 self.find_image() 基本一致，采用 OpenCV 算法
@@ -351,6 +367,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param region: 从指定区域中找图，默认全屏；
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
 
         # 区域相关参数
@@ -366,13 +384,15 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
         6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
-        result = self.find_images_by_opencv(image_path, region, algorithm, similarity, multi=1)
+        result = self.find_images_by_opencv(image_path, region, algorithm, similarity,
+                                            wait_time, interval_time, multi=1)
         if not result:
             return None
         return result[0]
 
     def find_images_by_opencv(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
-                              similarity: float = 0.9, multi: int = 1) -> List[_Point]:
+                              similarity: float = 0.9, wait_time: float = None, interval_time: float = None,
+                              multi: int = 1) -> List[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标列表
         与 self.find_image() 基本一致，采用 OpenCV 算法，并且可找多个目标。
@@ -380,6 +400,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param region: 从指定区域中找图，默认全屏；
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :param multi: 目标数量，默认为 1，找到 1 个目标后立即结束；
         :return:
 
@@ -396,6 +418,12 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
         6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
         if not region:
             region = [0, 0, 0, 0]
 
@@ -407,13 +435,13 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
                 threshold = 127
                 max_val = 255
 
-        end_time = time.time() + self.wait_timeout
+        end_time = time.time() + wait_time
         while time.time() < end_time:
             response = self.__send_data("findImage", image_path, *region, similarity,
                                         algorithm_type, threshold, max_val, multi)
             # 找图失败
             if response == "-1.0|-1.0":
-                time.sleep(self.interval_timeout)
+                time.sleep(interval_time)
             else:
                 # 找图成功，返回图片左上角坐标
                 # 分割出多个图片的坐标
@@ -426,25 +454,34 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         # 超时
         return []
 
-    def find_dynamic_image(self, interval_time, region: _Region = None) -> List[_Point]:
+    def find_dynamic_image(self, interval_ti, region: _Region = None,
+                           wait_time: float = None, interval_time: float = None) -> List[_Point]:
         """
         找动态图，对比同一张图在不同时刻是否发生变化，返回坐标列表
-        :param interval_time: 前后时刻的间隔时间；
+        :param interval_ti: 前后时刻的间隔时间；
         :param region: 在指定区域找图，默认全屏；
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
 
         # 区域相关参数
         region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
         if not region:
             region = [0, 0, 0, 0]
 
-        end_time = time.time() + self.wait_timeout
+        end_time = time.time() + wait_time
         while time.time() < end_time:
-            response = self.__send_data("findAnimation", interval_time, *region)
+            response = self.__send_data("findAnimation", interval_ti, *region)
             # 找图失败
             if response == "-1.0|-1.0":
-                time.sleep(self.interval_timeout)
+                time.sleep(interval_time)
             else:
                 # 找图成功，返回图片左上角坐标
                 # 分割出多个图片的坐标
