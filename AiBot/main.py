@@ -712,6 +712,14 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("scrollElement", xpath, direction) == "true"
 
+    def element_exists(self, xpath: str) -> bool:
+        """
+        元素是否存在
+        :param xpath: xpath 路径
+        :return:
+        """
+        return self.__send_data("existsElement", xpath) == "true"
+
     # #############
     #   文件传输   #
     # #############
@@ -813,12 +821,46 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("home") == "true"
 
-    def recent_tasks(self):
+    def recent_tasks(self) -> bool:
         """
         显示最近任务
         :return:
         """
         return self.__send_data("recents") == "true"
+
+    def open_uri(self, uri) -> bool:
+        """
+        唤起 app
+        :param uri: app 唤醒协议
+        :return:
+
+        open_uri("alipayqr://platformapi/startapp?saId=10000007")
+        """
+        return self.__send_data("openUri", uri) == "true"
+
+    def call_phone(self, mobile) -> bool:
+        """
+        拨打电话
+        :param mobile: 手机号码
+        :return:
+        """
+        return self.__send_data("callPhone", mobile) == "true"
+
+    def send_msg(self, mobile, text) -> bool:
+        """
+        发送短信
+        :param mobile: 手机号码
+        :param text: 短信内容
+        :return:
+        """
+        return self.__send_data("sendMsg", mobile, text) == "true"
+
+    def get_activity(self) -> str:
+        """
+        获取活动页
+        :return:
+        """
+        return self.__send_data("getActivity")
 
     # ##########
     #   其他   #
