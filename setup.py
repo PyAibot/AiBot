@@ -11,7 +11,7 @@ install_requires = [
 
 setup_kwargs = {
     'name': 'AiBot.py',
-    'version': '0.0.9',
+    'version': '0.1.0',
     'description': '...',
     'long_description': '...',
     'long_description_content_type': 'text/markdown',
