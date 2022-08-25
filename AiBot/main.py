@@ -128,10 +128,9 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
             self.request.sendall(data)
             data_length, data = self.request.recv(65535).split(b"/", 1)
 
-        self.log.debug(rf"<--- {data}")
-
-        while int(data_length) > len(data):
-            data += self.request.recv(65535)
+            while int(data_length) > len(data):
+                data += self.request.recv(65535)
+            self.log.debug(rf"<--- {data}")
 
         return data.decode("utf8").strip()
 
@@ -150,12 +149,13 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         bytes_data += file
 
         with self._lock:
+            self.log.debug(rf"---> {bytes_data}")
             self.request.sendall(bytes_data)
-
             data_length, data = self.request.recv(65535).split(b"/", 1)
 
             while int(data_length) > len(data):
                 data += self.request.recv(65535)
+            self.log.debug(rf"<--- {data}")
 
         return data.decode("utf8").strip()
 
@@ -171,12 +171,13 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
         with self._lock:
+            self.log.debug(rf"---> {data}")
             self.request.sendall(data)
-
             data_length, data = self.request.recv(65535).split(b"/", 1)
 
             while int(data_length) > len(data):
                 data += self.request.recv(65535)
+            self.log.debug(rf"<--- {data}")
 
         return data
 
