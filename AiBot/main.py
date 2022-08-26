@@ -676,6 +676,17 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         start_x, start_y, end_x, end_y = data.split("|")
         return _Point(x=start_x, y=start_y, driver=self), _Point(x=end_x, y=end_y, driver=self)
 
+    def get_element_desc(self, xpath: str) -> Optional[str]:
+        """
+        获取元素描述
+        :param xpath: xpath 路径
+        :return:
+        """
+        data = self.__send_data("getElementDescription", xpath)
+        if data == "null":
+            return None
+        return data
+
     def get_element_text(self, xpath: str) -> Optional[str]:
         """
         获取元素文本
@@ -797,8 +808,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param text: 弹窗内容；
         :return:
         """
-        response = self.__send_data("showToast", text)
-        return response == "true"
+        return self.__send_data("showToast", text) == "true"
 
     def send_keys(self, text: str) -> bool:
         """
@@ -856,12 +866,42 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("sendMsg", mobile, text) == "true"
 
-    def get_activity(self) -> str:
+    def get_package(self) -> Optional[str]:
+        """
+        获取当前包名
+        :return:
+        """
+        data = self.__send_data("getPackage")
+        if data == "null":
+            return None
+        return data
+
+    def get_activity(self) -> Optional[str]:
         """
         获取活动页
         :return:
         """
-        return self.__send_data("getActivity")
+        data = self.__send_data("getActivity")
+        if data == "null":
+            return None
+        return data
+
+    def get_clipboard_text(self) -> Optional[str]:
+        """
+        获取剪切板文本
+        :return:
+        """
+        data = self.__send_data("getClipboardText")
+        if data == "null":
+            return None
+        return data
+
+    def set_clipboard_text(self, text) -> bool:
+        """
+        设置剪切板文本
+        :return:
+        """
+        return self.__send_data("setClipboardText", text) == "true"
 
     # ##########
     #   其他   #
