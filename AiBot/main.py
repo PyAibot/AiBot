@@ -664,45 +664,113 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     # #############
     #   元素操作   #
     ###############
-    def get_element_rect(self, xpath: str) -> Optional[Tuple[_Point, _Point]]:
+    def get_element_rect(self, xpath: str, wait_time: float = None,
+                         interval_time: float = None) -> Optional[Tuple[_Point, _Point]]:
         """
         获取元素位置，返回元素区域左上角和右下角坐标
         :param xpath: xpath 路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
         """
-        data = self.__send_data("getElementRect", xpath)
-        if data == "-1|-1|-1|-1":
-            return None
-        start_x, start_y, end_x, end_y = data.split("|")
-        return _Point(x=start_x, y=start_y, driver=self), _Point(x=end_x, y=end_y, driver=self)
+        if wait_time is None:
+            wait_time = self.wait_timeout
 
-    def get_element_text(self, xpath: str) -> Optional[str]:
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            data = self.__send_data("getElementRect", xpath)
+            # 失败
+            if data == "-1|-1|-1|-1":
+                time.sleep(interval_time)
+            # 成功
+            else:
+                start_x, start_y, end_x, end_y = data.split("|")
+                return _Point(x=start_x, y=start_y, driver=self), _Point(x=end_x, y=end_y, driver=self)
+        # 超时
+        return None
+
+    def get_element_text(self, xpath: str, wait_time: float = None,
+                         interval_time: float = None) -> Optional[str]:
         """
         获取元素文本
         :param xpath: xpath 路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
         """
-        data = self.__send_data("getElementText", xpath)
-        if data == "null":
-            return None
-        return data
+        if wait_time is None:
+            wait_time = self.wait_timeout
 
-    def set_element_text(self, xpath: str, text: str) -> bool:
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            data = self.__send_data("getElementText", xpath)
+            # 失败
+            if data == "null":
+                time.sleep(interval_time)
+            # 成功
+            else:
+                return data
+        # 超时
+        return None
+
+    def set_element_text(self, xpath: str, text: str, wait_time: float = None,
+                         interval_time: float = None) -> bool:
         """
         设置元素文本
         :param xpath:
         :param text:
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
         """
-        return self.__send_data("setElementText", xpath, text) == "true"
+        if wait_time is None:
+            wait_time = self.wait_timeout
 
-    def click_element(self, xpath: str) -> bool:
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            # 失败
+            if self.__send_data("setElementText", xpath, text) != "true":
+                time.sleep(interval_time)
+            # 成功
+            else:
+                return True
+        # 超时
+        return False
+
+    def click_element(self, xpath: str, wait_time: float = None,
+                      interval_time: float = None) -> bool:
         """
         点击元素
         :param xpath:
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
         """
-        return self.__send_data("clickElement", xpath) == "true"
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            # 失败
+            if self.__send_data("clickElement", xpath) != "true":
+                time.sleep(interval_time)
+            # 成功
+            else:
+                return True
+        # 超时
+        return False
 
     def scroll_element(self, xpath: str, direction: int = 0) -> bool:
         """
