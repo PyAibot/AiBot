@@ -692,16 +692,32 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         # 超时
         return None
 
-    def get_element_desc(self, xpath: str) -> Optional[str]:
+    def get_element_desc(self, xpath: str, wait_time: float = None,
+                         interval_time: float = None) -> Optional[str]:
         """
         获取元素描述
         :param xpath: xpath 路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
         """
-        data = self.__send_data("getElementDescription", xpath)
-        if data == "null":
-            return None
-        return data
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            data = self.__send_data("getElementDescription", xpath)
+            # 失败
+            if data == "null":
+                time.sleep(interval_time)
+            # 成功
+            else:
+                return data
+        # 超时
+        return None
 
     def get_element_text(self, xpath: str, wait_time: float = None,
                          interval_time: float = None) -> Optional[str]:
