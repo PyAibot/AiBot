@@ -692,6 +692,17 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         # 超时
         return None
 
+    def get_element_desc(self, xpath: str) -> Optional[str]:
+        """
+        获取元素描述
+        :param xpath: xpath 路径
+        :return:
+        """
+        data = self.__send_data("getElementDescription", xpath)
+        if data == "null":
+            return None
+        return data
+
     def get_element_text(self, xpath: str, wait_time: float = None,
                          interval_time: float = None) -> Optional[str]:
         """
