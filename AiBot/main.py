@@ -89,7 +89,7 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
 
 
 class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
-    wait_timeout = 3  # seconds
+    wait_timeout = 0.01  # seconds
     interval_timeout = 0.5  # seconds
 
     log_path = ""
