@@ -40,13 +40,13 @@ class _Point:
         """
         self.__driver.click(self, offset_x=offset_x, offset_y=offset_y)
 
-    def get_points_center(self, other_point: "_Point"):
+    def get_points_center(self, other_point: "_Point") -> "_Point":
         """
         获取两个坐标点的中间坐标
         :param other_point: 其他的坐标点
         :return:
         """
-        return self.__class__(x=self.x + (self.x - other_point.x), y=self.y + (self.y - other_point.y),
+        return self.__class__(x=self.x + (other_point.x - self.x) / 2, y=self.y + (other_point.y - self.y) / 2,
                               driver=self.__driver)
 
     def __getitem__(self, item):
