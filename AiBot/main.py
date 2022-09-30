@@ -901,8 +901,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param text: 弹窗内容；
         :return:
         """
-        response = self.__send_data("showToast", text)
-        return response == "true"
+        return self.__send_data("showToast", text) == "true"
 
     def send_keys(self, text: str) -> bool:
         """
