@@ -520,6 +520,16 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("click", point[0] + offset_x, point[1] + offset_y) == "true"
 
+    def double_click(self, point: _Point_, offset_x: float = 0, offset_y: float = 0) -> bool:
+        """
+        双击坐标
+        :param point: 坐标；
+        :param offset_x: 坐标 x 轴偏移量；
+        :param offset_y: 坐标 y 轴偏移量；
+        :return:
+        """
+        return self.__send_data("doubleClick", point[0] + offset_x, point[1] + offset_y) == "true"
+
     def long_click(self, point: _Point_, duration: float, offset_x: float = 0, offset_y: float = 0) -> bool:
         """
         长按坐标
@@ -827,6 +837,14 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("existsElement", xpath) == "true"
 
+    def element_is_selected(self, xpath: str) -> bool:
+        """
+        元素是否存在
+        :param xpath: xpath 路径
+        :return:
+        """
+        return self.__send_data("isSelectedElement", xpath) == "true"
+
     # #############
     #   文件传输   #
     # #############
@@ -912,6 +930,16 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :return:
         """
         return self.__send_data("sendKeys", text) == "true"
+
+    def send_vk(self, vk: int) -> bool:
+        """
+        发送文本，需要打开 AiBot 输入法
+        :param vk: 虚拟键值
+        :return:
+
+        虚拟键值按键对照表 https://blog.csdn.net/yaoyaozaiye/article/details/122826340
+        """
+        return self.__send_data("sendVk", vk) == "true"
 
     def back(self) -> bool:
         """
