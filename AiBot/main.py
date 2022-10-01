@@ -966,6 +966,28 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("getActivity")
 
+    def get_package(self) -> str:
+        """
+        获取包名
+        :return:
+        """
+        return self.__send_data("getPackage")
+
+    def set_clipboard_text(self, text: str) -> bool:
+        """
+        设置剪切板文本
+        :param text:
+        :return:
+        """
+        return self.__send_data("setClipboardText", text) == "true"
+
+    def get_clipboard_text(self) -> str:
+        """
+        获取剪切板内容
+        :return:
+        """
+        return self.__send_data("getClipboardText")
+
     # ##########
     #   其他   #
     ############
