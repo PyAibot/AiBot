@@ -588,10 +588,9 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         return text_info_list
 
-    def __ocr_server(self, host: str, region: _Region = None, scale: float = 1.0) -> list:
+    def __ocr_server(self, region: _Region = None, scale: float = 1.0) -> list:
         """
         OCR 服务，通过 OCR 识别屏幕中文字
-        :param host:
         :param region:
         :param scale:
         :return:
@@ -599,30 +598,28 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         if not region:
             region = [0, 0, 0, 0]
 
-        response = self.__send_data("ocr", host, *region, scale)
+        response = self.__send_data("ocr", *region, scale)
         if response == "null" or response == "":
             return []
         return self.__parse_ocr(response)
 
-    def get_text(self, host: str, region: _Region = None, scale: float = 1.0) -> List[str]:
+    def get_text(self, region: _Region = None, scale: float = 1.0) -> List[str]:
         """
         通过 OCR 识别屏幕中的文字，返回文字列表
-        :param host: OCR 服务地址；
         :param region: 识别区域，默认全屏；
         :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
         :return:
         """
-        text_info_list = self.__ocr_server(host, region, scale)
+        text_info_list = self.__ocr_server(region, scale)
         text_list = []
         for text_info in text_info_list:
             text = text_info[-1][0]
             text_list.append(text)
         return text_list
 
-    def find_text(self, host: str, text: str, region: _Region = None, scale: float = 1.0) -> List[_Point]:
+    def find_text(self, text: str, region: _Region = None, scale: float = 1.0) -> List[_Point]:
         """
         查找文字所在的坐标，返回坐标列表（坐标是文本区域中心位置）
-        :param host: OCR 服务地址；
         :param text: 要查找的文字；
         :param region: 识别区域，默认全屏；
         :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
@@ -635,7 +632,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         if region[2] == 0:
             scale = 1.0
 
-        text_info_list = self.__ocr_server(host, region, scale)
+        text_info_list = self.__ocr_server(region, scale)
 
         text_points = []
         for text_info in text_info_list:
