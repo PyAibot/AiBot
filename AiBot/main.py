@@ -1018,47 +1018,41 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
     # ##############
     #   控件与参数   #
     # ##############
-    def create_text_view(self, id, text, screen_width, screen_height, x, y, width, height):
+    def create_text_view(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
         """
         :param id:  控件ID，不可与其他控件重复
         :param text:  控件文本
-        :param screen_width:  手机屏幕宽，用作适配不同分辨率设备
-        :param screen_height:  手机屏幕高，用作适配不同分辨率设备
         :param x:  控件在屏幕上x坐标
         :param y:  控件在屏幕上y坐标
-        :param width:  控件宽度
-        :param height:  控件高度
+        :param width:  控件宽度，默认 400
+        :param height:  控件高度，默认 150
         :return:
         """
-        return self.__send_data("createTextView", id, text, screen_width, screen_height, x, y, width, height)
+        return self.__send_data("createTextView", id, text, x, y, width, height)
 
-    def create_exit_view(self, id, text, screen_width, screen_height, x, y, width, height):
+    def create_edit_view(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 150):
         """
         :param id:  控件ID，不可与其他控件重复
         :param text:  控件文本
-        :param screen_width:  手机屏幕宽，用作适配不同分辨率设备
-        :param screen_height:  手机屏幕高，用作适配不同分辨率设备
         :param x:  控件在屏幕上x坐标
         :param y:  控件在屏幕上y坐标
-        :param width:  控件宽度
-        :param height:  控件高度
+        :param width:  控件宽度，默认 400
+        :param height:  控件高度，默认 150
         :return:
         """
-        return self.__send_data("createExitView", id, text, screen_width, screen_height, x, y, width, height)
+        return self.__send_data("createEditText", id, text, x, y, width, height)
 
-    def create_check_box(self, id, text, screen_width, screen_height, x, y, width, height):
+    def create_check_box(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
         """
         :param id:  控件ID，不可与其他控件重复
         :param text:  控件文本
-        :param screen_width:  手机屏幕宽，用作适配不同分辨率设备
-        :param screen_height:  手机屏幕高，用作适配不同分辨率设备
         :param x:  控件在屏幕上x坐标
         :param y:  控件在屏幕上y坐标
-        :param width:  控件宽度
-        :param height:  控件高度
+        :param width:  控件宽度，默认 400
+        :param height:  控件高度，默认 100
         :return:
         """
-        return self.__send_data("createCheckBox", id, text, screen_width, screen_height, x, y, width, height)
+        return self.__send_data("createCheckBox", id, text, x, y, width, height)
 
     def get_script_params(self) -> dict:
         """

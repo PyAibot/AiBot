@@ -7,8 +7,9 @@ class CustomScript(AiBotMain):
 
     def script_main(self):
         self.show_toast("连接成功")
-        self.create_exit_view(100, "理智恢复次数", 1080, 1920, 0, 10, 400, 150)
-        self.create_check_box(110, "是否使用源石", 1080, 1920, 500, 10, 400, 150)
+        self.create_text_view(90, "配置参数：", 0, 0)
+        self.create_edit_view(100, "理智恢复次数", 0, 60)
+        self.create_check_box(110, "是否使用源石", 500, 120)
         params = self.get_script_params()
         restore_count = params.get("100")
         print("理智恢复次数: ",  restore_count)
