@@ -959,7 +959,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("recents") == "true"
 
-    def open_uri(self, uri) -> bool:
+    def open_uri(self, uri: str) -> bool:
         """
         唤起 app
         :param uri: app 唤醒协议
@@ -969,7 +969,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("openUri", uri) == "true"
 
-    def call_phone(self, mobile) -> bool:
+    def call_phone(self, mobile: str) -> bool:
         """
         拨打电话
         :param mobile: 手机号码
@@ -1025,7 +1025,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param x:  控件在屏幕上x坐标
         :param y:  控件在屏幕上y坐标
         :param width:  控件宽度，默认 400
-        :param height:  控件高度，默认 150
+        :param height:  控件高度，默认 60
         :return:
         """
         return self.__send_data("createTextView", id, text, x, y, width, height)
@@ -1049,7 +1049,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param x:  控件在屏幕上x坐标
         :param y:  控件在屏幕上y坐标
         :param width:  控件宽度，默认 400
-        :param height:  控件高度，默认 100
+        :param height:  控件高度，默认 60
         :return:
         """
         return self.__send_data("createCheckBox", id, text, x, y, width, height)
@@ -1085,7 +1085,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
 
     @classmethod
-    def execute(cls, listen_port):
+    def execute(cls, listen_port: int):
         """
         多线程启动 Socket 服务，执行脚本
         :return:
