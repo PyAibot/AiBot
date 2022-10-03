@@ -450,7 +450,7 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
-            response = self.__send_data("findImage", image_path, *region, similarity,
+            response = self.__send_data("matchTemplate", image_path, *region, similarity,
                                         algorithm_type, threshold, max_val, multi)
             # 找图失败
             if response == "-1.0|-1.0":
