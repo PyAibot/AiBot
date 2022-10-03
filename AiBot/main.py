@@ -1054,10 +1054,13 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         """
         return self.__send_data("createCheckBox", id, text, x, y, width, height)
 
-    def get_script_params(self) -> dict:
+    def get_script_params(self) -> Optional[dict]:
         """
         :return:
         """
+        response = self.__send_data("getScriptParam")
+        if response == "null":
+            return None
         try:
             params = json.loads(self.__send_data("getScriptParam"))
         except Exception as e:
