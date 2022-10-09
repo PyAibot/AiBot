@@ -99,7 +99,7 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
 
 
-class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
+class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
 
