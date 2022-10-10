@@ -7,6 +7,51 @@ from typing import Union, List, Optional, Tuple, Dict
 from loguru import logger
 
 
+class _Point:
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __getitem__(self, item):
+        if item == 0:
+            return self.x
+        elif item == 1:
+            return self.y
+        else:
+            raise IndexError("list index out of range")
+
+    def __repr__(self):
+        return f"Point(x={self.x}, y={self.y})"
+
+    # def __init__(self, x, y, driver: "WinBotMain"):
+    #     self.x = x
+    #     self.y = y
+    #     self.__driver = driver
+    #
+    # def click(self, offset_x: float = 0, offset_y: float = 0):
+    #     """
+    #     点击坐标
+    #     :param offset_x: 坐标 x 轴偏移量；
+    #     :param offset_y: 坐标 y 轴偏移量；
+    #     :return:
+    #     """
+    #     self.__driver.click(self, offset_x=offset_x, offset_y=offset_y)
+    #
+    # def get_points_center(self, other_point: "_Point") -> "_Point":
+    #     """
+    #     获取两个坐标点的中间坐标
+    #     :param other_point: 其他的坐标点
+    #     :return:
+    #     """
+    #     return self.__class__(x=self.x + (other_point.x - self.x) / 2, y=self.y + (other_point.y - self.y) / 2,
+    #                           driver=self.__driver)
+
+
+_Region = Tuple[int, int, int, int]
+_Algorithm = Tuple[int, int, int]
+
+
 class WinBotMain:
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
@@ -223,3 +268,92 @@ class WinBotMain:
     # #############
     #   图色操作   #
     # #############
+    def save_screenshot(self, hwnd: str, save_path: str, region: _Region = None, algorithm: _Algorithm = None,
+                        mode: bool = False) -> bool:
+        """
+        截图
+        :param hwnd: 窗口句柄；
+        :param save_path: 图片存储路径；
+        :param region: 截图区域，默认全屏；
+        :param algorithm: 处理截图所用算法和参数，默认保存原图；
+        :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
+        :return:
+
+        # 区域相关参数
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        # 算法相关参数
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        threshold 和 max_val 同为 255 时灰度处理.
+        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
+        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
+        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
+        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
+        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
+        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
+        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
+        """
+
+    def get_color(self, hwnd: str, x: float, y: float, mode: bool = False) -> Optional[str]:
+        """
+        获取指定坐标点的色值，返回色值字符串(#008577)或者 None
+        :param hwnd: 窗口句柄；
+        :param x: x 坐标；
+        :param y: y 坐标；
+        :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
+        :return:
+        """
+
+    def find_images(self, hwnd: str, image_path, region: _Region = None, algorithm: _Algorithm = None,
+                    similarity: float = 0.9, mode: bool = False, wait_time: float = None,
+                    interval_time: float = None) -> List[_Point]:
+        """
+        寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标列表
+        :param hwnd: 窗口句柄；
+        :param image_path: 图片的绝对路径；
+        :param region: 从指定区域中找图，默认全屏；
+        :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
+        :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
+        :return:
+        """
+
+    def find_dynamic_image(self, hwnd: str, interval_ti: int, region: _Region = None, mode: bool = False,
+                           wait_time: float = None, interval_time: float = None) -> List[_Point]:
+        """
+        找动态图，对比同一张图在不同时刻是否发生变化，返回坐标列表
+        :param hwnd: 窗口句柄；
+        :param interval_ti: 前后时刻的间隔时间，单位毫秒；
+        :param region: 在指定区域找图，默认全屏；
+        :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
+        :return:
+        """
+
+    # ##############
+    #   OCR 相关   #
+    # ##############
+
+    def get_text(self, hwnd_or_image_path: str, region: _Region = None, scale: float = 1.0,
+                 mode: bool = False) -> List[str]:
+        """
+        通过 OCR 识别屏幕中的文字，返回文字列表
+        :param hwnd_or_image_path: 识别区域，默认全屏；
+        :param region: 识别区域，默认全屏；
+        :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
+        :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
+        :return:
+        """
+
+    def find_text(self, hwnd_or_image_path: str, region: _Region = None, scale: float = 1.0,
+                 mode: bool = False) -> List[str]:
+        """
+        通过 OCR 识别屏幕中的文字，返回文字列表
+        :param hwnd_or_image_path: 识别区域，默认全屏；
+        :param region: 识别区域，默认全屏；
+        :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
+        :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
+        :return:
+        """
