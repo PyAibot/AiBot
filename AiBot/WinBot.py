@@ -1,6 +1,7 @@
 import socket
 import subprocess
 import sys
+import time
 
 from typing import Union, List, Optional, Tuple, Dict
 
@@ -9,11 +10,11 @@ from loguru import logger
 
 class _Point:
 
-    def __init__(self, x, y):
+    def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int):
         if item == 0:
             return self.x
         elif item == 1:
@@ -48,8 +49,9 @@ class _Point:
     #                           driver=self.__driver)
 
 
-_Region = Tuple[int, int, int, int]
+_Region = Tuple[float, float, float, float]
 _Algorithm = Tuple[int, int, int]
+_SubColors = List[Tuple[int, int, str]]
 
 
 class WinBotMain:
@@ -292,6 +294,19 @@ class WinBotMain:
         5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
         6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
+        if not region:
+            region = [0, 0, 0, 0]
+
+        if not algorithm:
+            algorithm_type, threshold, max_val = [0, 0, 0]
+        else:
+            algorithm_type, threshold, max_val = algorithm
+            if algorithm_type in (5, 6):
+                threshold = 127
+                max_val = 255
+
+        return self.__send_data("saveScreenshot", hwnd, save_path, *region, algorithm_type, threshold, max_val,
+                                mode) == "true"
 
     def get_color(self, hwnd: str, x: float, y: float, mode: bool = False) -> Optional[str]:
         """
@@ -302,6 +317,69 @@ class WinBotMain:
         :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
         :return:
         """
+        response = self.__send_data("getColor", hwnd, x, y, mode)
+        if response == "null":
+            return None
+        return response
+
+    def find_color(self, hwnd: str, color: str, sub_colors: _SubColors = None, region: _Region = None,
+                   similarity: float = 0.9, mode: bool = False, wait_time: float = None, interval_time: float = None):
+        """
+        获取指定色值的坐标点，返回坐标或者 None
+        :param hwnd: 窗口句柄；
+        :param color: 颜色字符串，必须以 # 开头，例如：#008577；
+        :param sub_colors: 辅助定位的其他颜色；
+        :param region: 在指定区域内找色，默认全屏；
+        :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
+        :return:
+
+        # 区域相关参数
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        # 算法相关参数
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        threshold 和 max_val 同为 255 时灰度处理.
+        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
+        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
+        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
+        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
+        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
+        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
+        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
+        """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        if not region:
+            region = [0, 0, 0, 0]
+
+        if sub_colors:
+            sub_colors_str = ""
+            for sub_color in sub_colors:
+                offset_x, offset_y, color_str = sub_color
+                sub_colors_str += f"{offset_x}{offset_y}{color_str}\n"
+            # 去除最后一个 \n
+            sub_colors_str = sub_colors_str.strip()
+        else:
+            sub_colors_str = "null"
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data("findColor", hwnd, color, sub_colors_str, *region, similarity, mode)
+            # 找色失败
+            if response == "-1.0|-1.0":
+                time.sleep(interval_time)
+            else:
+                # 找色成功
+                x, y = response.split("|")
+                return _Point(x=float(x), y=float(y))
+        # 超时
+        return None
 
     def find_images(self, hwnd: str, image_path, region: _Region = None, algorithm: _Algorithm = None,
                     similarity: float = 0.9, mode: bool = False, wait_time: float = None,
@@ -317,7 +395,56 @@ class WinBotMain:
         :param wait_time: 等待时间，默认取 self.wait_timeout；
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
+
+        # 区域相关参数
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        # 算法相关参数
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        threshold 和 max_val 同为 255 时灰度处理.
+        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
+        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
+        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
+        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
+        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
+        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
+        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        if not region:
+            region = [0, 0, 0, 0]
+
+        if not algorithm:
+            algorithm_type, threshold, max_val = [0, 0, 0]
+        else:
+            algorithm_type, threshold, max_val = algorithm
+            if algorithm_type in (5, 6):
+                threshold = 127
+                max_val = 255
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data("findImage", hwnd, image_path, *region, similarity, algorithm_type, threshold,
+                                        max_val, mode)
+            # 找图失败
+            if response == "-1.0|-1.0":
+                time.sleep(interval_time)
+                continue
+            else:
+                # 找图成功，返回图片左上角坐标
+                # 分割出多个图片的坐标
+                image_points = response.split("/")
+                point_list = []
+                for point_str in image_points:
+                    x, y = point_str.split("|")
+                    point_list.append(_Point(x=float(x), y=float(y)))
+                return point_list
+        # 超时
+        return []
 
     def find_dynamic_image(self, hwnd: str, interval_ti: int, region: _Region = None, mode: bool = False,
                            wait_time: float = None, interval_time: float = None) -> List[_Point]:
@@ -331,6 +458,33 @@ class WinBotMain:
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        if not region:
+            region = [0, 0, 0, 0]
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data("findAnimation", hwnd, interval_ti, *region, mode)
+            # 找图失败
+            if response == "-1.0|-1.0":
+                time.sleep(interval_time)
+                continue
+            else:
+                # 找图成功，返回图片左上角坐标
+                # 分割出多个图片的坐标
+                image_points = response.split("/")
+                point_list = []
+                for point_str in image_points:
+                    x, y = point_str.split("|")
+                    point_list.append(_Point(x=float(x), y=float(y)))
+                return point_list
+        # 超时
+        return []
 
     # ##############
     #   OCR 相关   #
@@ -348,12 +502,139 @@ class WinBotMain:
         """
 
     def find_text(self, hwnd_or_image_path: str, region: _Region = None, scale: float = 1.0,
-                 mode: bool = False) -> List[str]:
+                  mode: bool = False) -> List[str]:
         """
         通过 OCR 识别屏幕中的文字，返回文字列表
         :param hwnd_or_image_path: 识别区域，默认全屏；
         :param region: 识别区域，默认全屏；
         :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
         :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
+        :return:
+        """
+
+    # ##############
+    #   元素操作   #
+    # ##############
+
+    def get_element_name(self, hwnd: str, xpath: str) -> Optional[str]:
+        """
+        获取元素名称
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :return:
+        """
+
+    def get_element_value(self, hwnd: str, xpath: str) -> Optional[str]:
+        """
+        获取元素文本
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :return:
+        """
+
+    def get_element_rect(self, hwnd: str, xpath: str) -> Optional[Tuple[_Point, _Point]]:
+        """
+        获取元素矩形大小
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :return:
+        """
+
+    def get_element_window(self, hwnd: str, xpath: str) -> Optional[str]:
+        """
+        获取元素窗口句柄
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :return:
+        """
+
+    def click_element(self, hwnd: str, xpath: str, typ: int) -> bool:
+        """
+        获取元素窗口句柄
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :param typ: 操作类型，单击左键:1 单击右键:2 按下左键:3 弹起左键:4 按下右键:5 弹起右键:6 双击左键:7 双击右键:8
+        :return:
+        """
+
+    def set_element_focus(self, hwnd: str, xpath: str) -> bool:
+        """
+        设置元素作为焦点
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :return:
+        """
+
+    def set_element_value(self, hwnd: str, xpath: str, value: str) -> bool:
+        """
+        设置元素文本
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :param value: 要设置的内容
+        :return:
+        """
+
+    def scroll_element(self, hwnd: str, xpath: str, horizontal: int, vertical: int) -> bool:
+        """
+        滚动元素
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :param horizontal: 水平百分比 -1不滚动
+        :param vertical: 垂直百分比 -1不滚动
+        :return:
+        """
+
+    def close_window(self, hwnd: str, xpath: str):
+        """
+        关闭窗口
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :return:
+        """
+
+    def set_element_state(self, hwnd: str, xpath: str, state: str) -> bool:
+        """
+        设置窗口状态
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :param state: 0正常 1最大化 2 最小化
+        :return:
+        """
+
+    # ###############
+    #   系统剪切板   #
+    # ###############
+    def set_clipboard_text(self, text: str) -> bool:
+        """
+        设置剪切板内容
+        :param text: 要设置的内容
+        :return:
+        """
+
+    def get_clipboard_text(self) -> str:
+        """
+        设置剪切板内容
+        :return:
+        """
+
+    # #############
+    #   启动进程   #
+    # #############
+
+    def start_process(self, cmd: str, show_window=True, is_wait=False) -> bool:
+        """
+        执行cmd命令
+        :param cmd: 命令
+        :param show_window:  是否显示窗口，默认显示
+        :param is_wait: 是否等待程序结束， 默认不等待
+        :return:
+        """
+
+    def download_file(self, url: str, file_path: str, is_wait: bool) -> bool:
+        """
+
+        :param url:  文件地址
+        :param file_path:  文件保存的路径
+        :param is_wait: 是否等待下载完成
         :return:
         """

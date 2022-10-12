@@ -258,8 +258,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param sub_colors: 辅助定位的其他颜色；
         :param region: 在指定区域内找色，默认全屏；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
-        :param wait_time: 等待时间，默认取 self.wait_timeout
-        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
 
         # 区域相关参数
