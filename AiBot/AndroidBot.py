@@ -99,7 +99,7 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
 
 
-class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
+class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
 
@@ -258,8 +258,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param sub_colors: 辅助定位的其他颜色；
         :param region: 在指定区域内找色，默认全屏；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
-        :param wait_time: 等待时间，默认取 self.wait_timeout
-        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
 
         # 区域相关参数
@@ -322,8 +322,8 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         :param region: 从指定区域中找图，默认全屏；
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
-        :param wait_time: 等待时间，默认取 self.wait_timeout
-        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
 
         # 区域相关参数
@@ -467,11 +467,11 @@ class AiBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "e
         # 超时
         return []
 
-    def find_dynamic_image(self, interval_ti, region: _Region = None,
+    def find_dynamic_image(self, interval_ti: int, region: _Region = None,
                            wait_time: float = None, interval_time: float = None) -> List[_Point]:
         """
         找动态图，对比同一张图在不同时刻是否发生变化，返回坐标列表
-        :param interval_ti: 前后时刻的间隔时间；
+        :param interval_ti: 前后时刻的间隔时间，单位毫秒；
         :param region: 在指定区域找图，默认全屏；
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout

@@ -1,3 +1,4 @@
-from .main import AiBotMain
+from .AndroidBot import AndroidBotMain
+from .WinBot import WinBotMain
 
-__all__ = ["AiBotMain"]
+__all__ = ["AndroidBotMain", "WinBotMain"]

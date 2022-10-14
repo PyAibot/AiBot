@@ -1,9 +1,9 @@
 import time
 
-from AiBot import AiBotMain
+from AiBot import AndroidBotMain
 
 
-class CustomScript(AiBotMain):
+class CustomScript(AndroidBotMain):
 
     def script_main(self):
         self.show_toast("连接成功")
@@ -13,8 +13,8 @@ class CustomScript(AiBotMain):
         params = self.get_script_params()
         restore_count = params.get("100")
         is_use_ys = params.get("110")
-        print("理智恢复次数: ",  restore_count)
-        print("是否使用源石: ",  is_use_ys)
+        print("理智恢复次数: ", restore_count)
+        print("是否使用源石: ", is_use_ys)
         while True:
             time.sleep(5)
             self.show_toast("恭喜发财")
