@@ -3,7 +3,7 @@ import subprocess
 import sys
 import time
 
-from typing import Union, List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple
 
 from loguru import logger
 

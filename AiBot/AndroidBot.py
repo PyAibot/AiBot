@@ -8,7 +8,6 @@ import time
 import re
 
 from ast import literal_eval
-from json import JSONDecodeError
 from typing import Union, List, Optional, Tuple, Dict
 
 from loguru import logger
@@ -28,7 +27,7 @@ from loguru import logger
 
 
 class _Point:
-    def __init__(self, x, y, driver: "AiBotMain"):
+    def __init__(self, x, y, driver: "AndroidBotMain"):
         self.x = x
         self.y = y
         self.__driver = driver
