@@ -516,81 +516,234 @@ class WinBotMain:
     #   元素操作   #
     # ##############
 
-    def get_element_name(self, hwnd: str, xpath: str) -> Optional[str]:
+    def get_element_name(self, hwnd: str, xpath: str, wait_time: float = None, interval_time: float = None) \
+            -> Optional[str]:
         """
         获取元素名称
         :param hwnd: 窗口句柄
         :param xpath: 元素路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
 
-    def get_element_value(self, hwnd: str, xpath: str) -> Optional[str]:
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data("getElementName", hwnd, xpath)
+            if response == "null":
+                time.sleep(interval_time)
+                continue
+            else:
+                return response
+        # 超时
+        return None
+
+    def get_element_value(self, hwnd: str, xpath: str, wait_time: float = None, interval_time: float = None) \
+            -> Optional[str]:
         """
         获取元素文本
         :param hwnd: 窗口句柄
         :param xpath: 元素路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
 
-    def get_element_rect(self, hwnd: str, xpath: str) -> Optional[Tuple[_Point, _Point]]:
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data("getElementValue", hwnd, xpath)
+            if response == "null":
+                time.sleep(interval_time)
+                continue
+            else:
+                return response
+        # 超时
+        return None
+
+    def get_element_rect(self, hwnd: str, xpath: str, wait_time: float = None, interval_time: float = None) \
+            -> Optional[Tuple[_Point, _Point]]:
         """
         获取元素矩形大小
         :param hwnd: 窗口句柄
         :param xpath: 元素路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
 
-    def get_element_window(self, hwnd: str, xpath: str) -> Optional[str]:
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data("getElementRect", hwnd, xpath)
+            if response == "-1|-1|-1|-1":
+                time.sleep(interval_time)
+                continue
+            else:
+                x1, y1, x2, y2 = response.split("|")
+                return _Point(x=float(x1), y=float(y1)), _Point(x=float(x2), y=float(y2))
+        # 超时
+        return None
+
+    def get_element_window(self, hwnd: str, xpath: str, wait_time: float = None, interval_time: float = None) \
+            -> Optional[str]:
         """
         获取元素窗口句柄
         :param hwnd: 窗口句柄
         :param xpath: 元素路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
 
-    def click_element(self, hwnd: str, xpath: str, typ: int) -> bool:
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data("getElementWindow", hwnd, xpath)
+            if response == "null":
+                time.sleep(interval_time)
+                continue
+            else:
+                return response
+        # 超时
+        return None
+
+    def click_element(self, hwnd: str, xpath: str, typ: int, wait_time: float = None,
+                      interval_time: float = None) -> bool:
         """
         获取元素窗口句柄
         :param hwnd: 窗口句柄
         :param xpath: 元素路径
         :param typ: 操作类型，单击左键:1 单击右键:2 按下左键:3 弹起左键:4 按下右键:5 弹起右键:6 双击左键:7 双击右键:8
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
 
-    def set_element_focus(self, hwnd: str, xpath: str) -> bool:
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data('clickElement', hwnd, xpath, typ)
+            if response == "false":
+                time.sleep(interval_time)
+                continue
+            else:
+                return True
+        # 超时
+        return False
+
+    def set_element_focus(self, hwnd: str, xpath: str, wait_time: float = None, interval_time: float = None) -> bool:
         """
         设置元素作为焦点
         :param hwnd: 窗口句柄
         :param xpath: 元素路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
 
-    def set_element_value(self, hwnd: str, xpath: str, value: str) -> bool:
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data('setElementFocus', hwnd, xpath)
+            if response == "false":
+                time.sleep(interval_time)
+                continue
+            else:
+                return True
+        # 超时
+        return False
+
+    def set_element_value(self, hwnd: str, xpath: str, value: str,
+                          wait_time: float = None, interval_time: float = None) -> bool:
         """
         设置元素文本
         :param hwnd: 窗口句柄
         :param xpath: 元素路径
         :param value: 要设置的内容
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
 
-    def scroll_element(self, hwnd: str, xpath: str, horizontal: int, vertical: int) -> bool:
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data('setElementValue', hwnd, xpath, value)
+            if response == "false":
+                time.sleep(interval_time)
+                continue
+            else:
+                return True
+        # 超时
+        return False
+
+    def scroll_element(self, hwnd: str, xpath: str, horizontal: int, vertical: int,
+                       wait_time: float = None, interval_time: float = None) -> bool:
         """
         滚动元素
         :param hwnd: 窗口句柄
         :param xpath: 元素路径
         :param horizontal: 水平百分比 -1不滚动
         :param vertical: 垂直百分比 -1不滚动
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
 
-    def close_window(self, hwnd: str, xpath: str):
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data('setElementScroll', hwnd, xpath, horizontal, vertical)
+            if response == "false":
+                time.sleep(interval_time)
+                continue
+            else:
+                return True
+        # 超时
+        return False
+
+    def close_window(self, hwnd: str, xpath: str) -> bool:
         """
         关闭窗口
         :param hwnd: 窗口句柄
         :param xpath: 元素路径
         :return:
         """
+        return self.__send_data('closeWindow', hwnd, xpath) == 'true'
 
     def set_element_state(self, hwnd: str, xpath: str, state: str) -> bool:
         """
@@ -600,6 +753,7 @@ class WinBotMain:
         :param state: 0正常 1最大化 2 最小化
         :return:
         """
+        return self.__send_data('setWindowState', hwnd, xpath, state) == 'true'
 
     # ###############
     #   系统剪切板   #
@@ -610,12 +764,14 @@ class WinBotMain:
         :param text: 要设置的内容
         :return:
         """
+        return self.__send_data("setClipboardText", text) == 'true'
 
     def get_clipboard_text(self) -> str:
         """
         设置剪切板内容
         :return:
         """
+        return self.__send_data("getClipboardText")
 
     # #############
     #   启动进程   #
