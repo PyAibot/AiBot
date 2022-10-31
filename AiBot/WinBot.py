@@ -781,16 +781,18 @@ class WinBotMain:
         """
         执行cmd命令
         :param cmd: 命令
-        :param show_window:  是否显示窗口，默认显示
+        :param show_window: 是否显示窗口，默认显示
         :param is_wait: 是否等待程序结束， 默认不等待
         :return:
         """
+        raise NotImplementedError()
 
     def download_file(self, url: str, file_path: str, is_wait: bool) -> bool:
         """
 
-        :param url:  文件地址
-        :param file_path:  文件保存的路径
+        :param url: 文件地址
+        :param file_path: 文件保存的路径
         :param is_wait: 是否等待下载完成
         :return:
         """
+        raise NotImplementedError()
