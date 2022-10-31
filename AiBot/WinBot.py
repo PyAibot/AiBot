@@ -785,7 +785,7 @@ class WinBotMain:
         :param is_wait: 是否等待程序结束， 默认不等待
         :return:
         """
-        raise NotImplementedError()
+        return self.__send_data("startProcess",  cmd, show_window, is_wait) == "true"
 
     def download_file(self, url: str, file_path: str, is_wait: bool) -> bool:
         """
@@ -795,4 +795,4 @@ class WinBotMain:
         :param is_wait: 是否等待下载完成
         :return:
         """
-        raise NotImplementedError()
+        return self.__send_data("downloadFile", url, file_path, is_wait) == "true"
