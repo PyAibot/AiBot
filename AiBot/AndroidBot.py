@@ -1061,7 +1061,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         if response == "null":
             return None
         try:
-            params = json.loads(self.__send_data("getScriptParam"))
+            params = json.loads(response)
         except Exception as e:
             self.show_toast("获取脚本参数异常!")
             raise e
