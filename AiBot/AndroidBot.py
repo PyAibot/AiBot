@@ -108,6 +108,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                  "<level>{level: <8}</level> | " \
                  "<cyan>{module}.{function}:{line}</cyan> | " \
                  "<level>{message}</level>"  # 日志内容
+    # 基础存储路径
+    _base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
 
     def __init__(self, request, client_address, server):
         self._lock = threading.Lock()
@@ -213,10 +215,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
         if image_name.find("/") != -1:
-            raise ValueError("`image_ name` cannot contain `/`.")
-
-        # 基础存储路径
-        base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
+            raise ValueError("`image_name` cannot contain `/`.")
 
         if not region:
             region = [0, 0, 0, 0]
@@ -229,10 +228,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 threshold = 127
                 max_val = 255
 
-        response = self.__send_data("saveScreenshot", base_path + image_name, *region,
+        response = self.__send_data("saveScreenshot", self._base_path + image_name, *region,
                                     algorithm_type, threshold, max_val)
         if response == "true":
-            return base_path + image_name
+            return self._base_path + image_name
         return None
 
     # #############
@@ -313,11 +312,11 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     # #############
     #   找图相关   #
     # #############
-    def find_image(self, image_path, region: _Region = None, algorithm: _Algorithm = None, similarity: float = 0.9,
+    def find_image(self, image_name, region: _Region = None, algorithm: _Algorithm = None, similarity: float = 0.9,
                    wait_time: float = None, interval_time: float = None) -> Optional[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标或者 None
-        :param image_path: 图片的绝对路径；
+        :param image_name: 图片名称（手机中）；
         :param region: 从指定区域中找图，默认全屏；
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
@@ -357,7 +356,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
-            response = self.__send_data("findImage", image_path, *region, similarity,
+            response = self.__send_data("findImage", self._base_path + image_name, *region, similarity,
                                         algorithm_type, threshold, max_val)
             # 找图失败
             if response == "-1.0|-1.0":
@@ -369,13 +368,13 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         # 超时
         return None
 
-    def find_image_by_opencv(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
+    def find_image_by_opencv(self, image_name, region: _Region = None, algorithm: _Algorithm = None,
                              similarity: float = 0.9,
                              wait_time: float = None, interval_time: float = None) -> Optional[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回图片坐标或者 None
         与 self.find_image() 基本一致，采用 OpenCV 算法
-        :param image_path: 图片的绝对路径；
+        :param image_name: 图片名称（手机中）；
         :param region: 从指定区域中找图，默认全屏；
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
@@ -396,19 +395,19 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
         6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
-        result = self.find_images_by_opencv(image_path, region, algorithm, similarity,
+        result = self.find_images_by_opencv(self._base_path + image_name, region, algorithm, similarity,
                                             wait_time, interval_time, multi=1)
         if not result:
             return None
         return result[0]
 
-    def find_images_by_opencv(self, image_path, region: _Region = None, algorithm: _Algorithm = None,
+    def find_images_by_opencv(self, image_name, region: _Region = None, algorithm: _Algorithm = None,
                               similarity: float = 0.9, wait_time: float = None, interval_time: float = None,
                               multi: int = 1) -> List[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标列表
         与 self.find_image() 基本一致，采用 OpenCV 算法，并且可找多个目标。
-        :param image_path: 图片的绝对路径；
+        :param image_name: 图片名称（手机中）；
         :param region: 从指定区域中找图，默认全屏；
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
@@ -449,7 +448,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
-            response = self.__send_data("matchTemplate", image_path, *region, similarity,
+            response = self.__send_data("matchTemplate", self._base_path + image_name, *region, similarity,
                                         algorithm_type, threshold, max_val, multi)
             # 找图失败
             if response == "-1.0|-1.0":
