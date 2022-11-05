@@ -395,7 +395,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
         6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
-        result = self.find_images_by_opencv(self._base_path + image_name, region, algorithm, similarity,
+        result = self.find_images_by_opencv(image_name, region, algorithm, similarity,
                                             wait_time, interval_time, multi=1)
         if not result:
             return None
