@@ -164,10 +164,14 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             self.log.debug(rf"---> {bytes_data}")
             self.request.sendall(bytes_data)
             data_length, data = self.request.recv(65535).split(b"/", 1)
-
+            self.log.debug(rf"<--- 数据总长: {data_length}")  #
+            self.log.debug(rf"<--- 已接收长度: {len(data)}, 已接收数据: {data}")  #
             while int(data_length) > len(data):
+                self.log.debug(rf"<--- 长度不足，继续接收...")  #
                 data += self.request.recv(65535)
-            self.log.debug(rf"<--- {data}")
+                self.log.debug(rf"<--- +++已接收长度: {len(data)}, 已接收数据: {data}")  #
+            self.log.debug(rf"<--- 最终接收长度: {len(data)}, 最终接收数据: {data}")  #
+            # self.log.debug(rf"<--- {data}")
 
         return data.decode("utf8").strip()
 
