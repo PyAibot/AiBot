@@ -138,15 +138,13 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         with self._lock:
             self.log.debug(rf"---> {data}")
             self.request.sendall(data)
-            data_length, data = self.request.recv(65535).split(b"/", 1)
-            self.log.debug(rf"<--- 数据总长: {data_length}")  #
-            self.log.debug(rf"<--- 已接收长度: {len(data)}, 已接收数据: {data}")  #
+            response = self.request.recv(65535)
+            if response == b"":
+                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
+            data_length, data = response.split(b"/", 1)
             while int(data_length) > len(data):
-                self.log.debug(rf"<--- 长度不足，继续接收...")  #
                 data += self.request.recv(65535)
-                self.log.debug(rf"<--- +++已接收长度: {len(data)}, 已接收数据: {data}")  #
-            self.log.debug(rf"<--- 最终接收长度: {len(data)}, 最终接收数据: {data}")  #
-            # self.log.debug(rf"<--- {data}")
+            self.log.debug(rf"<--- {data}")
 
         return data.decode("utf8").strip()
 
@@ -167,7 +165,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         with self._lock:
             self.log.debug(rf"---> {bytes_data}")
             self.request.sendall(bytes_data)
-            data_length, data = self.request.recv(65535).split(b"/", 1)
+            response = self.request.recv(65535)
+            if response == b"":
+                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
+            data_length, data = response.split(b"/", 1)
             while int(data_length) > len(data):
                 data += self.request.recv(65535)
             self.log.debug(rf"<--- {data}")
@@ -188,8 +189,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         with self._lock:
             self.log.debug(rf"---> {data}")
             self.request.sendall(data)
-            data_length, data = self.request.recv(65535).split(b"/", 1)
-
+            response = self.request.recv(65535)
+            if response == b"":
+                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
+            data_length, data = response.split(b"/", 1)
             while int(data_length) > len(data):
                 data += self.request.recv(65535)
             self.log.debug(rf"<--- {data}")
