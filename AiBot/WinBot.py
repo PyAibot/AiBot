@@ -381,8 +381,8 @@ class WinBotMain:
         # 超时
         return None
 
-    def find_images(self, hwnd: str, image_path, region: _Region = None, algorithm: _Algorithm = None,
-                    similarity: float = 0.9, mode: bool = False, wait_time: float = None,
+    def find_images(self, hwnd: str, image_path:str, region: _Region = None, algorithm: _Algorithm = None,
+                    similarity: float = 0.9, mode: bool = False, multi: int = 1, wait_time: float = None,
                     interval_time: float = None) -> List[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标列表
@@ -392,6 +392,7 @@ class WinBotMain:
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
         :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
+        :param multi: 返回图片数量，默认1张；
         :param wait_time: 等待时间，默认取 self.wait_timeout；
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :return:
@@ -429,7 +430,7 @@ class WinBotMain:
         end_time = time.time() + wait_time
         while time.time() < end_time:
             response = self.__send_data("findImage", hwnd, image_path, *region, similarity, algorithm_type, threshold,
-                                        max_val, mode)
+                                        max_val, multi, mode)
             # 找图失败
             if response == "-1.0|-1.0":
                 time.sleep(interval_time)
@@ -785,7 +786,7 @@ class WinBotMain:
         :param is_wait: 是否等待程序结束， 默认不等待
         :return:
         """
-        return self.__send_data("startProcess",  cmd, show_window, is_wait) == "true"
+        return self.__send_data("startProcess", cmd, show_window, is_wait) == "true"
 
     def download_file(self, url: str, file_path: str, is_wait: bool) -> bool:
         """
