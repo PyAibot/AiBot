@@ -12,9 +12,11 @@ def main():
     print(r)
     print(len(r))
 
-    driver.show_window("2688664", True)
+    result = driver.show_window("2688664", True)
+    print(result)
 
-    driver.scroll_mouse("2688664", 100, 100, 1)
+    result = driver.find_images("65826", "D:/Aibote/Picture/windows/666.png")
+    print(result)
 
 
 if __name__ == '__main__':
