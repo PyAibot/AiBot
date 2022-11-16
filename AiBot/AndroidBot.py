@@ -669,14 +669,14 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 # 计算文本区域中心坐标
                 if region[2] != 0:  # 缩放
                     text_point = _Point(
-                        x=int(region[0] + (start_x + offset_x) / scale),
-                        y=int(region[1] + (start_y + offset_y) / scale),
+                        x=float(region[0] + (start_x + offset_x) / scale),
+                        y=float(region[1] + (start_y + offset_y) / scale),
                         driver=self
                     )
                 else:
                     text_point = _Point(
-                        x=int(region[0] + (start_x + offset_x) * 2),
-                        y=int(region[1] + (start_y + offset_y) * 2),
+                        x=float(region[0] + (start_x + offset_x) * 2),
+                        y=float(region[1] + (start_y + offset_y) * 2),
                         driver=self
                     )
                 text_points.append(text_point)
@@ -710,7 +710,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             # 成功
             else:
                 start_x, start_y, end_x, end_y = data.split("|")
-                return _Point(x=start_x, y=start_y, driver=self), _Point(x=end_x, y=end_y, driver=self)
+                return _Point(x=float(start_x), y=float(start_y), driver=self), _Point(x=float(end_x), y=float(end_y),
+                                                                                       driver=self)
         # 超时
         return None
 
