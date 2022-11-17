@@ -106,8 +106,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     log_level = "INFO"
     log_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
                  "<level>{level: <8}</level> | " \
+                 "{thread.name: <8} | " \
                  "<cyan>{module}.{function}:{line}</cyan> | " \
                  "<level>{message}</level>"  # 日志内容
+
     # 基础存储路径
     _base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
 
