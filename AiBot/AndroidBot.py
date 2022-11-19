@@ -841,6 +841,11 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -907,6 +912,12 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
         """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
         end_time = time.time() + wait_time
         while time.time() < end_time:
             # 失败
