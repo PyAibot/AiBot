@@ -833,13 +833,25 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("scrollElement", xpath, direction) == "true"
 
-    def element_exists(self, xpath: str) -> bool:
+    def element_exists(self, xpath: str, wait_time: float = None, interval_time: float = None) -> bool:
         """
         元素是否存在
         :param xpath: xpath 路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
         """
-        return self.__send_data("existsElement", xpath) == "true"
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            # 失败
+            if self.__send_data("existsElement", xpath) != "true":
+                time.sleep(interval_time)
+            # 成功
+            else:
+                return True
+        # 超时
+        return False
 
     def element_is_selected(self, xpath: str) -> bool:
         """
@@ -887,13 +899,24 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     #   设备操作   #
     # #############
 
-    def start_app(self, name: str) -> bool:
+    def start_app(self, name: str, wait_time: float = None, interval_time: float = None) -> bool:
         """
         启动 APP
         :param name: APP名字或者包名
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
         """
-        return self.__send_data("startApp", name) == "true"
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            # 失败
+            if self.__send_data("startApp", name) != "true":
+                time.sleep(interval_time)
+            # 成功
+            else:
+                return True
+        # 超时
+        return False
 
     def get_android_id(self) -> str:
         """
