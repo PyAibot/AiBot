@@ -12,10 +12,7 @@ def main():
     print(r)
     print(len(r))
 
-    result = driver.show_window("2688664", True)
-    print(result)
-
-    result = driver.find_images("65826", "D:/Aibote/Picture/windows/666.png")
+    result = driver.find_text("525178", "闲聊群1")
     print(result)
 
 

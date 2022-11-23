@@ -1,7 +1,9 @@
+import re
 import socket
 import subprocess
 import sys
 import time
+from ast import literal_eval
 
 from typing import List, Optional, Tuple
 
@@ -381,7 +383,7 @@ class WinBotMain:
         # 超时
         return None
 
-    def find_images(self, hwnd: str, image_path:str, region: _Region = None, algorithm: _Algorithm = None,
+    def find_images(self, hwnd: str, image_path: str, region: _Region = None, algorithm: _Algorithm = None,
                     similarity: float = 0.9, mode: bool = False, multi: int = 1, wait_time: float = None,
                     interval_time: float = None) -> List[_Point]:
         """
@@ -432,7 +434,7 @@ class WinBotMain:
             response = self.__send_data("findImage", hwnd, image_path, *region, similarity, algorithm_type, threshold,
                                         max_val, multi, mode)
             # 找图失败
-            if response == "-1.0|-1.0":
+            if response in ["-1.0|-1.0", "-1|-1"]:
                 time.sleep(interval_time)
                 continue
             else:
@@ -490,28 +492,130 @@ class WinBotMain:
     # ##############
     #   OCR 相关   #
     # ##############
-
-    def get_text(self, hwnd_or_image_path: str, region: _Region = None, scale: float = 1.0,
-                 mode: bool = False) -> List[str]:
+    @staticmethod
+    def __parse_ocr(text: str) -> list:
         """
-        通过 OCR 识别屏幕中的文字，返回文字列表
-        :param hwnd_or_image_path: 识别区域，默认全屏；
+        解析 OCR 识别出出来的信息
+        :param text:
+        :return:
+        """
+        pattern = re.compile(r'(\[\[\[).+?(\)])')
+        matches = pattern.finditer(text)
+
+        text_info_list = []
+        for match in matches:
+            result_str = match.group()
+            text_info = literal_eval(result_str)
+            text_info_list.append(text_info)
+
+        return text_info_list
+
+    def __ocr_server(self, hwnd: str, region: _Region = None, mode: bool = False) -> list:
+        """
+        OCR 服务，通过 OCR 识别屏幕中文字
+        :param hwnd:
+        :param region:
+        :param mode:
+        :return:
+        """
+        if not region:
+            region = [0, 0, 0, 0]
+
+        response = self.__send_data("ocr", hwnd, *region, mode)
+        if response == "null" or response == "":
+            return []
+        return self.__parse_ocr(response)
+
+    def __ocr_server_by_file(self, image_path: str, region: _Region = None) -> list:
+        """
+        OCR 服务，通过 OCR 识别屏幕中文字
+        :param image_path:
+        :param region:
+        :return:
+        """
+        if not region:
+            region = [0, 0, 0, 0]
+
+        response = self.__send_data("ocrByFile", image_path, *region)
+        if response == "null" or response == "":
+            return []
+        return self.__parse_ocr(response)
+
+    def get_text(self, hwnd_or_image_path: str, region: _Region = None, mode: bool = False) -> List[str]:
+        """
+        通过 OCR 识别窗口/图片中的文字，返回文字列表
+        :param hwnd_or_image_path: 窗口句柄或者图片路径；
         :param region: 识别区域，默认全屏；
-        :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
         :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
         :return:
         """
+        if hwnd_or_image_path.isdigit():
+            # 句柄
+            text_info_list = self.__ocr_server(hwnd_or_image_path, region, mode)
+        else:
+            # 图片
+            text_info_list = self.__ocr_server_by_file(hwnd_or_image_path, region)
 
-    def find_text(self, hwnd_or_image_path: str, region: _Region = None, scale: float = 1.0,
-                  mode: bool = False) -> List[str]:
+        text_list = []
+        for text_info in text_info_list:
+            text = text_info[-1][0]
+            text_list.append(text)
+        return text_list
+
+    def find_text(self, hwnd_or_image_path: str, text: str, region: _Region = None, mode: bool = False) -> List[_Point]:
         """
-        通过 OCR 识别屏幕中的文字，返回文字列表
+        通过 OCR 识别窗口/图片中的文字，返回文字列表
         :param hwnd_or_image_path: 识别区域，默认全屏；
+        :param text: 要查找的文字；
         :param region: 识别区域，默认全屏；
-        :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
         :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
         :return:
         """
+        if not region:
+            region = [0, 0, 0, 0]
+
+        if hwnd_or_image_path.isdigit():
+            # 句柄
+            text_info_list = self.__ocr_server(hwnd_or_image_path, region, mode)
+        else:
+            # 图片
+            text_info_list = self.__ocr_server_by_file(hwnd_or_image_path, region)
+
+        text_points = []
+        for text_info in text_info_list:
+            if text in text_info[-1][0]:
+                points, words_tuple = text_info
+
+                left, _, right, _ = points
+
+                # 文本区域起点坐标
+                start_x = left[0]
+                start_y = left[1]
+                # 文本区域终点坐标
+                end_x = right[0]
+                end_y = right[1]
+                # 文本区域中心点据左上角的偏移量
+                # 可能指定文本只是部分文本，要计算出实际位置(x轴)
+                width = end_x - start_x
+                height = end_y - start_y
+                words: str = words_tuple[0]
+
+                # 单字符宽度
+                single_word_width = width / len(words)
+                # 文本在整体文本的起始位置
+                pos = words.find(text)
+
+                offset_x = single_word_width * (pos + len(text) / 2)
+                offset_y = height / 2
+
+                # 计算文本区域中心坐标
+                text_point = _Point(
+                    x=float(region[0] + start_x + offset_x),
+                    y=float(region[1] + start_y + offset_y),
+                )
+                text_points.append(text_point)
+
+        return text_points
 
     # ##############
     #   元素操作   #
