@@ -64,6 +64,7 @@ class WinBotMain:
     log_level = "DEBUG"
     log_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
                  "<level>{level: <8}</level> | " \
+                 "{thread.name: <8} | " \
                  "<cyan>{module}.{function}:{line}</cyan> | " \
                  "<level>{message}</level>"  # 日志内容
 
