@@ -323,7 +323,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def find_image(self, image_name, region: _Region = None, algorithm: _Algorithm = None, similarity: float = 0.9,
                    wait_time: float = None, interval_time: float = None) -> Optional[_Point]:
         """
-        寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标或者 None
+        寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回坐标或者 None
         :param image_name: 图片名称（手机中）；
         :param region: 从指定区域中找图，默认全屏；
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
@@ -380,7 +380,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                              similarity: float = 0.9,
                              wait_time: float = None, interval_time: float = None) -> Optional[_Point]:
         """
-        寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回图片坐标或者 None
+        寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回图片坐标或者 None
         与 self.find_image() 基本一致，采用 OpenCV 算法
         :param image_name: 图片名称（手机中）；
         :param region: 从指定区域中找图，默认全屏；
@@ -413,7 +413,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                               similarity: float = 0.9, wait_time: float = None, interval_time: float = None,
                               multi: int = 1) -> List[_Point]:
         """
-        寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标列表
+        寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回坐标列表
         与 self.find_image() 基本一致，采用 OpenCV 算法，并且可找多个目标。
         :param image_name: 图片名称（手机中）；
         :param region: 从指定区域中找图，默认全屏；
