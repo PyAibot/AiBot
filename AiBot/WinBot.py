@@ -388,7 +388,7 @@ class WinBotMain:
                     similarity: float = 0.9, mode: bool = False, multi: int = 1, wait_time: float = None,
                     interval_time: float = None) -> List[_Point]:
         """
-        寻找图片坐标，在当前屏幕中寻找给定图片的坐标，返回坐标列表
+        寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回坐标列表
         :param hwnd: 窗口句柄；
         :param image_path: 图片的绝对路径；
         :param region: 从指定区域中找图，默认全屏；
@@ -679,7 +679,7 @@ class WinBotMain:
     def get_element_rect(self, hwnd: str, xpath: str, wait_time: float = None, interval_time: float = None) \
             -> Optional[Tuple[_Point, _Point]]:
         """
-        获取元素矩形大小
+        获取元素矩形，返回左上和右下坐标
         :param hwnd: 窗口句柄
         :param xpath: 元素路径
         :param wait_time: 等待时间，默认取 self.wait_timeout；
