@@ -199,16 +199,17 @@ class WinBotMain:
     # #############
     #   键鼠操作   #
     # #############
-    def move_mouse(self, hwnd: str, x: float, y: float, mode: bool = False) -> bool:
+    def move_mouse(self, hwnd: str, x: float, y: float, mode: bool = False, ele_hwnd: str = "0") -> bool:
         """
         移动鼠标
         :param hwnd: 当前窗口句柄
         :param x: 横坐标
         :param y: 纵坐标
         :param mode: 操作模式，后台 true，前台 false, 默认前台操作
+        :param ele_hwnd: 元素句柄，如果 mode=True 且目标控件有单独的句柄，则需要通过 get_element_window 获得元素句柄，指定 ele_hwnd 的值(极少应用窗口由父窗口响应消息，则无需指定);
         :return:
         """
-        return self.__send_data("moveMouse", hwnd, x, y, mode) == "true"
+        return self.__send_data("moveMouse", hwnd, x, y, mode, ele_hwnd) == "true"
 
     def scroll_mouse(self, hwnd: str, x: float, y: float, count: int, mode: bool = False) -> bool:
         """
@@ -222,7 +223,8 @@ class WinBotMain:
         """
         return self.__send_data("rollMouse", hwnd, x, y, count, mode) == "true"
 
-    def click_mouse(self, hwnd: str, x: float, y: float, typ: int, mode: bool = False) -> bool:
+    def click_mouse(self, hwnd: str, x: float, y: float, typ: int, mode: bool = False,
+                    ele_hwnd: str = "0") -> bool:
         """
         鼠标点击
         :param hwnd: 当前窗口句柄
@@ -230,9 +232,10 @@ class WinBotMain:
         :param y: 纵坐标
         :param typ: 点击类型，单击左键:1 单击右键:2 按下左键:3 弹起左键:4 按下右键:5 弹起右键:6 双击左键:7 双击右键:8
         :param mode: 操作模式，后台 true，前台 false, 默认前台操作
+        :param ele_hwnd: 元素句柄，如果 mode=True 且目标控件有单独的句柄，则需要通过 get_element_window 获得元素句柄，指定 ele_hwnd 的值(极少应用窗口由父窗口响应消息，则无需指定);
         :return:
         """
-        return self.__send_data("clickMouse", hwnd, x, y, typ, mode) == "true"
+        return self.__send_data("clickMouse", hwnd, x, y, typ, mode, ele_hwnd) == "true"
 
     def send_keys(self, text: str) -> bool:
         """
