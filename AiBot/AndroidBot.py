@@ -866,48 +866,17 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("isSelectedElement", xpath) == "true"
 
-    # #############
-    #   文件传输   #
-    # #############
-    def push_file(self, origin_path: str, to_path: str) -> bool:
+    def click_element_by_slide(self, xpath, distance: int = 1000, duration: float = 0.5, direction: int = 1,
+                               count: int = 999, end_flag_xpath: str = None,
+                               wait_time: float = None, interval_time: float = None) -> bool:
         """
-        将电脑文件传输到手机端
-        :param origin_path: 源文件路径
-        :param to_path: 目标存储路径
-        :return:
-        """
-        to_path = "/storage/emulated/0/" + to_path
-
-        with open(origin_path, "rb") as file:
-            data = file.read()
-
-        return self.__push_file("pushFile", to_path, data) == "true"
-
-    def pull_file(self, remote_path: str, local_path: str) -> bool:
-        """
-        将手机文件传输到电脑端
-        :param remote_path: 手机端文件路径
-        :param local_path: 电脑本地文件存储路径
-        :return:
-        """
-        remote_path = "/storage/emulated/0/" + remote_path
-
-        data = self.__pull_file("pullFile", remote_path)
-        if data == b"null":
-            return False
-
-        with open(local_path, "wb") as file:
-            file.write(data)
-        return True
-
-    # #############
-    #   设备操作   #
-    # #############
-
-    def start_app(self, name: str, wait_time: float = None, interval_time: float = None) -> bool:
-        """
-        启动 APP
-        :param name: APP名字或者包名
+        滑动列表，查找并点击指定元素
+        :param xpath:
+        :param distance: 滑动距离，默认 1000
+        :param duration: 滑动时间，默认 0.5 秒
+        :param direction: 滑动方向，默认为 1； 1=上滑，2=下滑，3=左滑，4-右滑
+        :param count: 滑动次数
+        :param end_flag_xpath: 结束标志 xpath
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :return:
@@ -919,230 +888,318 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         end_time = time.time() + wait_time
-        while time.time() < end_time:
-            # 失败
-            if self.__send_data("startApp", name) != "true":
-                time.sleep(interval_time)
-            # 成功
-            else:
-                return True
+        current_count = 0
+        while time.time() < end_time and current_count < count:
+            result = self.click_element(xpath)
+
+            current_count += 1
+            time.sleep(interval_time)
         # 超时
         return False
 
-    def get_android_id(self) -> str:
-        """
-        获取 Android 设备 ID
-        :return:
-        """
-        return self.__send_data("getAndroidId")
 
-    def get_window_size(self) -> Dict[str, float]:
-        """
-        获取屏幕大小
-        :return:
-        """
-        width, height = self.__send_data("getWindowSize").split("|")
-        return {"width": float(width), "height": float(height)}
+# #############
+#   文件传输   #
+# #############
+def push_file(self, origin_path: str, to_path: str) -> bool:
+    """
+    将电脑文件传输到手机端
+    :param origin_path: 源文件路径
+    :param to_path: 目标存储路径
+    :return:
+    """
+    to_path = "/storage/emulated/0/" + to_path
 
-    def get_image_size(self, image_path) -> Dict[str, float]:
-        """
-        获取图片大小
-        :param image_path: 图片路径；
-        :return:
-        """
-        width, height = self.__send_data("getImageSize", image_path).split("|")
-        return {"width": float(width), "height": float(height)}
+    with open(origin_path, "rb") as file:
+        data = file.read()
 
-    def show_toast(self, text: str) -> bool:
-        """
-        Toast 弹窗
-        :param text: 弹窗内容；
-        :return:
-        """
-        return self.__send_data("showToast", text) == "true"
+    return self.__push_file("pushFile", to_path, data) == "true"
 
-    def send_keys(self, text: str) -> bool:
-        """
-        发送文本，需要打开 AiBot 输入法
-        :param text: 文本内容
-        :return:
-        """
-        return self.__send_data("sendKeys", text) == "true"
 
-    def send_vk(self, vk: int) -> bool:
-        """
-        发送文本，需要打开 AiBot 输入法
-        :param vk: 虚拟键值
-        :return:
+def pull_file(self, remote_path: str, local_path: str) -> bool:
+    """
+    将手机文件传输到电脑端
+    :param remote_path: 手机端文件路径
+    :param local_path: 电脑本地文件存储路径
+    :return:
+    """
+    remote_path = "/storage/emulated/0/" + remote_path
 
-        虚拟键值按键对照表 https://blog.csdn.net/yaoyaozaiye/article/details/122826340
-        """
-        return self.__send_data("sendVk", vk) == "true"
+    data = self.__pull_file("pullFile", remote_path)
+    if data == b"null":
+        return False
 
-    def back(self) -> bool:
-        """
-        返回
-        :return:
-        """
-        return self.__send_data("back") == "true"
+    with open(local_path, "wb") as file:
+        file.write(data)
+    return True
 
-    def home(self) -> bool:
-        """
-        返回桌面
-        :return:
-        """
-        return self.__send_data("home") == "true"
 
-    def recent_tasks(self) -> bool:
-        """
-        显示最近任务
-        :return:
-        """
-        return self.__send_data("recents") == "true"
+# #############
+#   设备操作   #
+# #############
 
-    def open_uri(self, uri: str) -> bool:
-        """
-        唤起 app
-        :param uri: app 唤醒协议
-        :return:
+def start_app(self, name: str, wait_time: float = None, interval_time: float = None) -> bool:
+    """
+    启动 APP
+    :param name: APP名字或者包名
+    :param wait_time: 等待时间，默认取 self.wait_timeout
+    :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+    :return:
+    """
+    if wait_time is None:
+        wait_time = self.wait_timeout
 
-        open_uri("alipayqr://platformapi/startapp?saId=10000007")
-        """
-        return self.__send_data("openUri", uri) == "true"
+    if interval_time is None:
+        interval_time = self.interval_timeout
 
-    def call_phone(self, mobile: str) -> bool:
-        """
-        拨打电话
-        :param mobile: 手机号码
-        :return:
-        """
-        return self.__send_data("callPhone", mobile) == "true"
+    end_time = time.time() + wait_time
+    while time.time() < end_time:
+        # 失败
+        if self.__send_data("startApp", name) != "true":
+            time.sleep(interval_time)
+        # 成功
+        else:
+            return True
+    # 超时
+    return False
 
-    def send_msg(self, mobile, text) -> bool:
-        """
-        发送短信
-        :param mobile: 手机号码
-        :param text: 短信内容
-        :return:
-        """
-        return self.__send_data("sendMsg", mobile, text) == "true"
 
-    def get_activity(self) -> str:
-        """
-        获取活动页
-        :return:
-        """
-        return self.__send_data("getActivity")
+def get_android_id(self) -> str:
+    """
+    获取 Android 设备 ID
+    :return:
+    """
+    return self.__send_data("getAndroidId")
 
-    def get_package(self) -> str:
-        """
-        获取包名
-        :return:
-        """
-        return self.__send_data("getPackage")
 
-    def set_clipboard_text(self, text: str) -> bool:
-        """
-        设置剪切板文本
-        :param text:
-        :return:
-        """
-        return self.__send_data("setClipboardText", text) == "true"
+def get_window_size(self) -> Dict[str, float]:
+    """
+    获取屏幕大小
+    :return:
+    """
+    width, height = self.__send_data("getWindowSize").split("|")
+    return {"width": float(width), "height": float(height)}
 
-    def get_clipboard_text(self) -> str:
-        """
-        获取剪切板内容
-        :return:
-        """
-        return self.__send_data("getClipboardText")
 
-    # ##############
-    #   控件与参数   #
-    # ##############
-    def create_text_view(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
-        """
-        :param id:  控件ID，不可与其他控件重复
-        :param text:  控件文本
-        :param x:  控件在屏幕上x坐标
-        :param y:  控件在屏幕上y坐标
-        :param width:  控件宽度，默认 400
-        :param height:  控件高度，默认 60
-        :return:
-        """
-        return self.__send_data("createTextView", id, text, x, y, width, height)
+def get_image_size(self, image_path) -> Dict[str, float]:
+    """
+    获取图片大小
+    :param image_path: 图片路径；
+    :return:
+    """
+    width, height = self.__send_data("getImageSize", image_path).split("|")
+    return {"width": float(width), "height": float(height)}
 
-    def create_edit_view(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 150):
-        """
-        :param id:  控件ID，不可与其他控件重复
-        :param text:  控件文本
-        :param x:  控件在屏幕上x坐标
-        :param y:  控件在屏幕上y坐标
-        :param width:  控件宽度，默认 400
-        :param height:  控件高度，默认 150
-        :return:
-        """
-        return self.__send_data("createEditText", id, text, x, y, width, height)
 
-    def create_check_box(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
-        """
-        :param id:  控件ID，不可与其他控件重复
-        :param text:  控件文本
-        :param x:  控件在屏幕上x坐标
-        :param y:  控件在屏幕上y坐标
-        :param width:  控件宽度，默认 400
-        :param height:  控件高度，默认 60
-        :return:
-        """
-        return self.__send_data("createCheckBox", id, text, x, y, width, height)
+def show_toast(self, text: str) -> bool:
+    """
+    Toast 弹窗
+    :param text: 弹窗内容；
+    :return:
+    """
+    return self.__send_data("showToast", text) == "true"
 
-    def get_script_params(self) -> Optional[dict]:
-        """
-        :return:
-        """
-        response = self.__send_data("getScriptParam")
-        if response == "null":
-            return None
-        try:
-            params = json.loads(response)
-        except Exception as e:
-            self.show_toast("获取脚本参数异常!")
-            raise e
-        return params
 
-    # ##########
-    #   其他   #
-    ############
-    def handle(self) -> None:
-        # 设置阻塞模式
-        # self.request.setblocking(False)
+def send_keys(self, text: str) -> bool:
+    """
+    发送文本，需要打开 AiBot 输入法
+    :param text: 文本内容
+    :return:
+    """
+    return self.__send_data("sendKeys", text) == "true"
 
-        # 设置缓冲区
-        # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65535)
-        self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024 * 1024)  # 发送缓冲区 10M
 
-        # 执行脚本
-        self.script_main()
+def send_vk(self, vk: int) -> bool:
+    """
+    发送文本，需要打开 AiBot 输入法
+    :param vk: 虚拟键值
+    :return:
 
-    @abc.abstractmethod
-    def script_main(self):
-        """脚本入口，由子类重写
-        """
+    虚拟键值按键对照表 https://blog.csdn.net/yaoyaozaiye/article/details/122826340
+    """
+    return self.__send_data("sendVk", vk) == "true"
 
-    @classmethod
-    def execute(cls, listen_port: int):
-        """
-        多线程启动 Socket 服务，执行脚本
-        :return:
-        """
 
-        if listen_port < 0 or listen_port > 65535:
-            raise OSError("`listen_port` must be in 0-65535.")
+def back(self) -> bool:
+    """
+    返回
+    :return:
+    """
+    return self.__send_data("back") == "true"
 
-        # 获取 IPv4 可用地址
-        address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
-            0]
-        *_, socket_address = address_info
 
-        # 启动 Socket 服务
-        sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
-        sock.serve_forever()
+def home(self) -> bool:
+    """
+    返回桌面
+    :return:
+    """
+    return self.__send_data("home") == "true"
+
+
+def recent_tasks(self) -> bool:
+    """
+    显示最近任务
+    :return:
+    """
+    return self.__send_data("recents") == "true"
+
+
+def open_uri(self, uri: str) -> bool:
+    """
+    唤起 app
+    :param uri: app 唤醒协议
+    :return:
+
+    open_uri("alipayqr://platformapi/startapp?saId=10000007")
+    """
+    return self.__send_data("openUri", uri) == "true"
+
+
+def call_phone(self, mobile: str) -> bool:
+    """
+    拨打电话
+    :param mobile: 手机号码
+    :return:
+    """
+    return self.__send_data("callPhone", mobile) == "true"
+
+
+def send_msg(self, mobile, text) -> bool:
+    """
+    发送短信
+    :param mobile: 手机号码
+    :param text: 短信内容
+    :return:
+    """
+    return self.__send_data("sendMsg", mobile, text) == "true"
+
+
+def get_activity(self) -> str:
+    """
+    获取活动页
+    :return:
+    """
+    return self.__send_data("getActivity")
+
+
+def get_package(self) -> str:
+    """
+    获取包名
+    :return:
+    """
+    return self.__send_data("getPackage")
+
+
+def set_clipboard_text(self, text: str) -> bool:
+    """
+    设置剪切板文本
+    :param text:
+    :return:
+    """
+    return self.__send_data("setClipboardText", text) == "true"
+
+
+def get_clipboard_text(self) -> str:
+    """
+    获取剪切板内容
+    :return:
+    """
+    return self.__send_data("getClipboardText")
+
+
+# ##############
+#   控件与参数   #
+# ##############
+def create_text_view(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
+    """
+    :param id:  控件ID，不可与其他控件重复
+    :param text:  控件文本
+    :param x:  控件在屏幕上x坐标
+    :param y:  控件在屏幕上y坐标
+    :param width:  控件宽度，默认 400
+    :param height:  控件高度，默认 60
+    :return:
+    """
+    return self.__send_data("createTextView", id, text, x, y, width, height)
+
+
+def create_edit_view(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 150):
+    """
+    :param id:  控件ID，不可与其他控件重复
+    :param text:  控件文本
+    :param x:  控件在屏幕上x坐标
+    :param y:  控件在屏幕上y坐标
+    :param width:  控件宽度，默认 400
+    :param height:  控件高度，默认 150
+    :return:
+    """
+    return self.__send_data("createEditText", id, text, x, y, width, height)
+
+
+def create_check_box(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
+    """
+    :param id:  控件ID，不可与其他控件重复
+    :param text:  控件文本
+    :param x:  控件在屏幕上x坐标
+    :param y:  控件在屏幕上y坐标
+    :param width:  控件宽度，默认 400
+    :param height:  控件高度，默认 60
+    :return:
+    """
+    return self.__send_data("createCheckBox", id, text, x, y, width, height)
+
+
+def get_script_params(self) -> Optional[dict]:
+    """
+    :return:
+    """
+    response = self.__send_data("getScriptParam")
+    if response == "null":
+        return None
+    try:
+        params = json.loads(response)
+    except Exception as e:
+        self.show_toast("获取脚本参数异常!")
+        raise e
+    return params
+
+
+# ##########
+#   其他   #
+############
+def handle(self) -> None:
+    # 设置阻塞模式
+    # self.request.setblocking(False)
+
+    # 设置缓冲区
+    # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65535)
+    self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024 * 1024)  # 发送缓冲区 10M
+
+    # 执行脚本
+    self.script_main()
+
+
+@abc.abstractmethod
+def script_main(self):
+    """脚本入口，由子类重写
+    """
+
+
+@classmethod
+def execute(cls, listen_port: int):
+    """
+    多线程启动 Socket 服务，执行脚本
+    :return:
+    """
+
+    if listen_port < 0 or listen_port > 65535:
+        raise OSError("`listen_port` must be in 0-65535.")
+
+    # 获取 IPv4 可用地址
+    address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
+        0]
+    *_, socket_address = address_info
+
+    # 启动 Socket 服务
+    sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
+    sock.serve_forever()
