@@ -85,7 +85,19 @@ class WinBotMain:
 
     @classmethod
     def build(cls, port: int) -> "WinBotMain":
-        subprocess.Popen(["WindowsDriver.exe", str(port)])
+        try:
+            subprocess.Popen(["WindowsDriver.exe", str(port)])
+        except FileNotFoundError as e:
+            err_msg = """
+            FileNotFoundError: [WinError 2] 系统找不到指定的文件。
+            异常排除步骤：
+            1. 检查 Aibote.exe 路径是否存在中文；
+            2. 是否启动 Aibote.exe 初始化环境变量；
+            3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；
+            4. 首次初始化环境变量后，是否重启开发工具；
+            """
+            print("\033[92m", err_msg, "\033[0m")
+            raise e
         return WinBotMain(port)
 
     def __send_data(self, *args) -> str:
