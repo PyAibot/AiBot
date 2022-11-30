@@ -874,7 +874,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param xpath:
         :param distance: 滑动距离，默认 1000
         :param duration: 滑动时间，默认 0.5 秒
-        :param direction: 滑动方向，默认为 1； 1=上滑，2=下滑，3=左滑，4-右滑
+        :param direction: 滑动方向，默认为 1； 1=上滑，2=下滑
         :param count: 滑动次数
         :param end_flag_xpath: 结束标志 xpath
         :param wait_time: 等待时间，默认取 self.wait_timeout
@@ -887,14 +887,27 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         if interval_time is None:
             interval_time = self.interval_timeout
 
+        if direction == 1:
+            _end_point = (500, 300)
+            _start_point = (500, _end_point[1] + distance)
+        elif direction == 2:
+            _start_point = (500, 300)
+            _end_point = (500, _start_point[1] + distance)
+        else:
+            raise RuntimeError(f"未知方向：{direction}")
+
         end_time = time.time() + wait_time
         current_count = 0
         while time.time() < end_time and current_count < count:
-            result = self.click_element(xpath)
+            if self.click_element(xpath):
+                return True
 
+            if self.element_exists(end_flag_xpath):
+                return False
+
+            self.swipe(_start_point, _end_point, duration)
             current_count += 1
             time.sleep(interval_time)
-        # 超时
         return False
 
 
