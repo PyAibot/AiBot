@@ -868,7 +868,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
     def click_element_by_slide(self, xpath, distance: int = 1000, duration: float = 0.5, direction: int = 1,
                                count: int = 999, end_flag_xpath: str = None,
-                               wait_time: float = None, interval_time: float = None) -> bool:
+                               wait_time: float = 600, interval_time: float = 0.5) -> bool:
         """
         滑动列表，查找并点击指定元素
         :param xpath:
@@ -877,16 +877,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param direction: 滑动方向，默认为 1； 1=上滑，2=下滑
         :param count: 滑动次数
         :param end_flag_xpath: 结束标志 xpath
-        :param wait_time: 等待时间，默认取 self.wait_timeout
-        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param wait_time: 等待时间，默认 10 分钟
+        :param interval_time: 轮询间隔时间，默认 0.5 秒
         :return:
         """
-        if wait_time is None:
-            wait_time = self.wait_timeout
-
-        if interval_time is None:
-            interval_time = self.interval_timeout
-
         if direction == 1:
             _end_point = (500, 300)
             _start_point = (500, _end_point[1] + distance)
@@ -899,10 +893,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         end_time = time.time() + wait_time
         current_count = 0
         while time.time() < end_time and current_count < count:
-            if self.click_element(xpath):
+            if self.click_element(xpath, wait_time=1, interval_time=0.01):
                 return True
 
-            if self.element_exists(end_flag_xpath):
+            if self.element_exists(end_flag_xpath, wait_time=1, interval_time=0.01):
                 return False
 
             self.swipe(_start_point, _end_point, duration)
