@@ -242,6 +242,16 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             return self._base_path + image_name
         return None
 
+    def save_element_screenshot(self, image_name, xpath) -> Optional[str]:
+        """
+        保存元素截图，返回图片地址(手机中)或者 None
+        :return:
+        """
+        rect = self.get_element_rect(xpath)
+        if rect is None:
+            return None
+        return self.save_screenshot(image_name, region=(rect[0].x, rect[0].y, rect[1].x, rect[1].y))
+
     # #############
     #   色值相关   #
     # #############
@@ -913,6 +923,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param origin_path: 源文件路径
         :param to_path: 目标存储路径
         :return:
+
+        ex:
+        origin_path: /
+        to_path: /storage/emulated/0/Android/data/com.aibot.client/files/code479259.png
         """
         to_path = "/storage/emulated/0/" + to_path
 
@@ -927,6 +941,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param remote_path: 手机端文件路径
         :param local_path: 电脑本地文件存储路径
         :return:
+
+        ex:
+        remote_path: /storage/emulated/0/Android/data/com.aibot.client/files/code479259.png
+        local_path: /
         """
         remote_path = "/storage/emulated/0/" + remote_path
 
@@ -966,6 +984,13 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 return True
         # 超时
         return False
+
+    def get_device_ip(self) -> str:
+        """
+        获取设备IP地址
+        :return:
+        """
+        return self.client_address[0]
 
     def get_android_id(self) -> str:
         """
