@@ -928,7 +928,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         origin_path: /
         to_path: /storage/emulated/0/Android/data/com.aibot.client/files/code479259.png
         """
-        to_path = "/storage/emulated/0/" + to_path
+        if not to_path.startswith("/storage/emulated/0/"):
+            to_path = "/storage/emulated/0/" + to_path
 
         with open(origin_path, "rb") as file:
             data = file.read()
@@ -946,7 +947,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         remote_path: /storage/emulated/0/Android/data/com.aibot.client/files/code479259.png
         local_path: /
         """
-        remote_path = "/storage/emulated/0/" + remote_path
+        if not remote_path.startswith("/storage/emulated/0/"):
+            remote_path = "/storage/emulated/0/" + remote_path
 
         data = self.__pull_file("pullFile", remote_path)
         if data == b"null":
