@@ -612,6 +612,15 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         return self.__send_data("dispatchGesture", gesture_path_str, duration) == "true"
 
+    def press(self):
+        """TODO"""
+
+    def move(self):
+        """TODO"""
+
+    def release(self):
+        """TODO"""
+
     # ##############
     #   OCR 相关   #
     ################
@@ -1211,6 +1220,12 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("sendVk", vk) == "true"
 
+    def write_android_file(self):
+        """TODO"""
+
+    def read_android_file(self):
+        """TODO"""
+
     def back(self) -> bool:
         """
         返回
@@ -1326,6 +1341,12 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :return:
         """
         return self.__send_data("createCheckBox", _id, text, x, y, width, height)
+
+    def create_web_view(self):
+        """TODO"""
+
+    def clear_script_widget(self):
+        """TODO"""
 
     def get_script_params(self) -> Optional[dict]:
         """
