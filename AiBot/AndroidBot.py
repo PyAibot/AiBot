@@ -98,7 +98,12 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
 
 
+LOCK = threading.Lock()
+
+
 class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
+    raise_err = False
+
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
 
@@ -114,7 +119,6 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     _base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
 
     def __init__(self, request, client_address, server):
-        self._lock = threading.Lock()
         self.log = logger
 
         self.log.remove()
@@ -137,7 +141,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        with self._lock:
+        with LOCK:
             self.log.debug(rf"---> {data}")
             self.request.sendall(data)
             response = self.request.recv(65535)
@@ -164,7 +168,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         bytes_data += to_path
         bytes_data += file
 
-        with self._lock:
+        with LOCK:
             self.log.debug(rf"---> {bytes_data}")
             self.request.sendall(bytes_data)
             response = self.request.recv(65535)
@@ -188,7 +192,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        with self._lock:
+        with LOCK:
             self.log.debug(rf"---> {data}")
             self.request.sendall(data)
             response = self.request.recv(65535)
@@ -331,7 +335,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     #   找图相关   #
     # #############
     def find_image(self, image_name, region: _Region = None, algorithm: _Algorithm = None, similarity: float = 0.9,
-                   wait_time: float = None, interval_time: float = None) -> Optional[_Point]:
+                   wait_time: float = None, interval_time: float = None, raise_err: bool = None) -> Optional[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回坐标或者 None
         :param image_name: 图片名称（手机中）；
@@ -340,6 +344,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
         :param wait_time: 等待时间，默认取 self.wait_timeout；
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
+        :param raise_err: 超时是否抛出异常；
         :return:
 
         # 区域相关参数
@@ -360,6 +365,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
 
         if not region:
             region = [0, 0, 0, 0]
@@ -384,11 +392,13 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 x, y = response.split("|")
                 return _Point(x=float(x), y=float(y), driver=self)
         # 超时
+        if raise_err:
+            raise TimeoutError("`find_image` 操作超时。")
         return None
 
     def find_image_by_opencv(self, image_name, region: _Region = None, algorithm: _Algorithm = None,
-                             similarity: float = 0.9,
-                             wait_time: float = None, interval_time: float = None) -> Optional[_Point]:
+                             similarity: float = 0.9, wait_time: float = None, interval_time: float = None,
+                             raise_err: bool = None) -> Optional[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回图片坐标或者 None
         与 self.find_image() 基本一致，采用 OpenCV 算法
@@ -398,6 +408,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param raise_err: 超时是否抛出异常；
         :return:
 
         # 区域相关参数
@@ -413,15 +424,15 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
         6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
-        result = self.find_images_by_opencv(image_name, region, algorithm, similarity,
-                                            wait_time, interval_time, multi=1)
+        result = self.find_images_by_opencv(image_name, region, algorithm, similarity, 1, wait_time, interval_time,
+                                            raise_err)
         if not result:
             return None
         return result[0]
 
     def find_images_by_opencv(self, image_name, region: _Region = None, algorithm: _Algorithm = None,
-                              similarity: float = 0.9, wait_time: float = None, interval_time: float = None,
-                              multi: int = 1) -> List[_Point]:
+                              similarity: float = 0.9, multi: int = 1, wait_time: float = None,
+                              interval_time: float = None, raise_err: bool = None) -> List[_Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回坐标列表
         与 self.find_image() 基本一致，采用 OpenCV 算法，并且可找多个目标。
@@ -429,9 +440,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param region: 从指定区域中找图，默认全屏；
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param multi: 目标数量，默认为 1，找到 1 个目标后立即结束；
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
-        :param multi: 目标数量，默认为 1，找到 1 个目标后立即结束；
+        :param raise_err: 超时是否抛出异常；
         :return:
 
         # 区域相关参数
@@ -452,6 +464,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
 
         if not region:
             region = [0, 0, 0, 0]
@@ -481,16 +496,19 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                     point_list.append(_Point(x=float(x), y=float(y), driver=self))
                 return point_list
         # 超时
+        if raise_err:
+            raise TimeoutError("`find_images_by_opencv` 操作超时。")
         return []
 
-    def find_dynamic_image(self, interval_ti: int, region: _Region = None,
-                           wait_time: float = None, interval_time: float = None) -> List[_Point]:
+    def find_dynamic_image(self, interval_ti: int, region: _Region = None, wait_time: float = None,
+                           interval_time: float = None, raise_err: bool = None) -> List[_Point]:
         """
         找动态图，对比同一张图在不同时刻是否发生变化，返回坐标列表
         :param interval_ti: 前后时刻的间隔时间，单位毫秒；
         :param region: 在指定区域找图，默认全屏；
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param raise_err: 超时是否抛出异常；
         :return:
 
         # 区域相关参数
@@ -501,6 +519,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
 
         if not region:
             region = [0, 0, 0, 0]
@@ -521,6 +542,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                     point_list.append(_Point(x=float(x), y=float(y), driver=self))
                 return point_list
         # 超时
+        if raise_err:
+            raise TimeoutError("`find_dynamic_image` 操作超时。")
         return []
 
     # ################
@@ -698,13 +721,14 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     # #############
     #   元素操作   #
     ###############
-    def get_element_rect(self, xpath: str, wait_time: float = None,
-                         interval_time: float = None) -> Optional[Tuple[_Point, _Point]]:
+    def get_element_rect(self, xpath: str, wait_time: float = None, interval_time: float = None,
+                         raise_err: bool = None) -> Optional[Tuple[_Point, _Point]]:
         """
         获取元素位置，返回元素区域左上角和右下角坐标
         :param xpath: xpath 路径
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param raise_err: 超时是否抛出异常；
         :return:
         """
         if wait_time is None:
@@ -712,6 +736,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -725,15 +752,18 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 return _Point(x=float(start_x), y=float(start_y), driver=self), _Point(x=float(end_x), y=float(end_y),
                                                                                        driver=self)
         # 超时
+        if raise_err:
+            raise TimeoutError("`get_element_rect` 操作超时。")
         return None
 
-    def get_element_desc(self, xpath: str, wait_time: float = None,
-                         interval_time: float = None) -> Optional[str]:
+    def get_element_desc(self, xpath: str, wait_time: float = None, interval_time: float = None,
+                         raise_err: bool = None) -> Optional[str]:
         """
         获取元素描述
         :param xpath: xpath 路径
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param raise_err: 超时是否抛出异常；
         :return:
         """
         if wait_time is None:
@@ -741,6 +771,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -752,15 +785,18 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             else:
                 return data
         # 超时
+        if raise_err:
+            raise TimeoutError("`get_element_desc` 操作超时。")
         return None
 
-    def get_element_text(self, xpath: str, wait_time: float = None,
-                         interval_time: float = None) -> Optional[str]:
+    def get_element_text(self, xpath: str, wait_time: float = None, interval_time: float = None,
+                         raise_err: bool = None) -> Optional[str]:
         """
         获取元素文本
         :param xpath: xpath 路径
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param raise_err: 超时是否抛出异常；
         :return:
         """
         if wait_time is None:
@@ -768,6 +804,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -779,16 +818,19 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             else:
                 return data
         # 超时
+        if raise_err:
+            raise TimeoutError("`get_element_text` 操作超时。")
         return None
 
-    def set_element_text(self, xpath: str, text: str, wait_time: float = None,
-                         interval_time: float = None) -> bool:
+    def set_element_text(self, xpath: str, text: str, wait_time: float = None, interval_time: float = None,
+                         raise_err: bool = None) -> bool:
         """
         设置元素文本
         :param xpath:
         :param text:
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param raise_err: 超时是否抛出异常；
         :return:
         """
         if wait_time is None:
@@ -796,6 +838,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -806,15 +851,18 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             else:
                 return True
         # 超时
+        if raise_err:
+            raise TimeoutError("`set_element_text` 操作超时。")
         return False
 
-    def click_element(self, xpath: str, wait_time: float = None,
-                      interval_time: float = None) -> bool:
+    def click_element(self, xpath: str, wait_time: float = None, interval_time: float = None,
+                      raise_err: bool = None) -> bool:
         """
         点击元素
         :param xpath:
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param raise_err: 超时是否抛出异常；
         :return:
         """
         if wait_time is None:
@@ -822,6 +870,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -832,6 +883,39 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             else:
                 return True
         # 超时
+        if raise_err:
+            raise TimeoutError("`click_element` 操作超时。")
+        return False
+
+    def click_any_elements(self, xpath_list: List[str], wait_time: float = None, interval_time: float = None,
+                           raise_err: bool = None) -> bool:
+        """
+        遍历点击列表中的元素，直到任意一个元素返回 True
+        :param xpath_list: xpath 列表
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param raise_err: 超时是否抛出异常；
+        :return:
+        """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            for xpath in xpath_list:
+                result = self.click_element(xpath, wait_time=1, interval_time=1)
+                if result:
+                    return True
+            time.sleep(interval_time)
+
+        if raise_err:
+            raise TimeoutError("`click_any_elements` 操作超时。")
         return False
 
     def scroll_element(self, xpath: str, direction: int = 0) -> bool:
@@ -843,12 +927,14 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("scrollElement", xpath, direction) == "true"
 
-    def element_exists(self, xpath: str, wait_time: float = None, interval_time: float = None) -> bool:
+    def element_not_exists(self, xpath: str, wait_time: float = None, interval_time: float = None,
+                           raise_err: bool = None) -> bool:
         """
-        元素是否存在
+        元素是否不存在
         :param xpath: xpath 路径
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param raise_err: 超时是否抛出异常；
         :return:
         """
         if wait_time is None:
@@ -856,6 +942,41 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            # 存在
+            if self.__send_data("existsElement", xpath) == "true":
+                time.sleep(interval_time)
+            # 不存在
+            else:
+                return True
+        # 超时
+        if raise_err:
+            raise TimeoutError("`element_not_exists` 操作超时。")
+        return False
+
+    def element_exists(self, xpath: str, wait_time: float = None, interval_time: float = None,
+                       raise_err: bool = None) -> bool:
+        """
+        元素是否存在
+        :param xpath: xpath 路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param raise_err: 超时是否抛出异常；
+        :return:
+        """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -866,6 +987,39 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             else:
                 return True
         # 超时
+        if raise_err:
+            raise TimeoutError("`element_exists` 操作超时。")
+        return False
+
+    def any_elements_exists(self, xpath_list: List[str], wait_time: float = None, interval_time: float = None,
+                            raise_err: bool = None) -> bool:
+        """
+        遍历列表中的元素，只要任意一个元素存在就返回 True
+        :param xpath_list: xpath 列表
+        :param wait_time: 等待时间，默认取 self.wait_timeout
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
+        :param raise_err: 超时是否抛出异常；
+        :return:
+        """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            for xpath in xpath_list:
+                result = self.element_exists(xpath, wait_time=1, interval_time=1)
+                if result:
+                    return True
+            time.sleep(interval_time)
+
+        if raise_err:
+            raise TimeoutError("`any_elements_exists` 操作超时。")
         return False
 
     def element_is_selected(self, xpath: str) -> bool:
@@ -877,8 +1031,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         return self.__send_data("isSelectedElement", xpath) == "true"
 
     def click_element_by_slide(self, xpath, distance: int = 1000, duration: float = 0.5, direction: int = 1,
-                               count: int = 999, end_flag_xpath: str = None,
-                               wait_time: float = 600, interval_time: float = 0.5) -> bool:
+                               count: int = 999, end_flag_xpath: str = None, wait_time: float = 600,
+                               interval_time: float = 0.5, raise_err: bool = None) -> bool:
         """
         滑动列表，查找并点击指定元素
         :param xpath:
@@ -889,8 +1043,12 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param end_flag_xpath: 结束标志 xpath
         :param wait_time: 等待时间，默认 10 分钟
         :param interval_time: 轮询间隔时间，默认 0.5 秒
+        :param raise_err: 超时是否抛出异常；
         :return:
         """
+        if raise_err is None:
+            interval_time = self.raise_err
+
         if direction == 1:
             _end_point = (500, 300)
             _start_point = (500, _end_point[1] + distance)
@@ -912,6 +1070,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             self.swipe(_start_point, _end_point, duration)
             current_count += 1
             time.sleep(interval_time)
+
+        if raise_err:
+            raise TimeoutError("`click_element_by_slide` 操作超时。")
         return False
 
     # #############
@@ -1124,9 +1285,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     # ##############
     #   控件与参数   #
     # ##############
-    def create_text_view(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
+    def create_text_view(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
         """
-        :param id:  控件ID，不可与其他控件重复
+        :param _id:  控件ID，不可与其他控件重复
         :param text:  控件文本
         :param x:  控件在屏幕上x坐标
         :param y:  控件在屏幕上y坐标
@@ -1134,11 +1295,11 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param height:  控件高度，默认 60
         :return:
         """
-        return self.__send_data("createTextView", id, text, x, y, width, height)
+        return self.__send_data("createTextView", _id, text, x, y, width, height)
 
-    def create_edit_view(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 150):
+    def create_edit_view(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 150):
         """
-        :param id:  控件ID，不可与其他控件重复
+        :param _id:  控件ID，不可与其他控件重复
         :param text:  控件文本
         :param x:  控件在屏幕上x坐标
         :param y:  控件在屏幕上y坐标
@@ -1146,11 +1307,11 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param height:  控件高度，默认 150
         :return:
         """
-        return self.__send_data("createEditText", id, text, x, y, width, height)
+        return self.__send_data("createEditText", _id, text, x, y, width, height)
 
-    def create_check_box(self, id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
+    def create_check_box(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
         """
-        :param id:  控件ID，不可与其他控件重复
+        :param _id:  控件ID，不可与其他控件重复
         :param text:  控件文本
         :param x:  控件在屏幕上x坐标
         :param y:  控件在屏幕上y坐标
@@ -1158,7 +1319,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param height:  控件高度，默认 60
         :return:
         """
-        return self.__send_data("createCheckBox", id, text, x, y, width, height)
+        return self.__send_data("createCheckBox", _id, text, x, y, width, height)
 
     def get_script_params(self) -> Optional[dict]:
         """
