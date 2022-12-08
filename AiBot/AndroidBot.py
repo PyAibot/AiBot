@@ -271,7 +271,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         return response
 
     def find_color(self, color: str, sub_colors: _SubColors = None, region: _Region = None, similarity: float = 0.9,
-                   wait_time: float = None, interval_time: float = None) -> Optional[_Point]:
+                   wait_time: float = None, interval_time: float = None, raise_err: bool = None) -> Optional[_Point]:
         """
         获取指定色值的坐标点，返回坐标或者 None
         :param color: 颜色字符串，必须以 # 开头，例如：#008577；
@@ -280,6 +280,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
         :param wait_time: 等待时间，默认取 self.wait_timeout；
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
+        :param raise_err: 超时是否抛出异常；
         :return:
 
         # 区域相关参数
@@ -300,6 +301,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
+
+        if raise_err is None:
+            interval_time = self.raise_err
 
         if not region:
             region = [0, 0, 0, 0]
@@ -325,6 +329,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 x, y = response.split("|")
                 return _Point(x=float(x), y=float(y), driver=self)
         # 超时
+        if raise_err:
+            raise TimeoutError("`find_color` 操作超时。")
         return None
 
     # def compare_color(self):
