@@ -98,7 +98,6 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
 
 
-LOCK = threading.Lock()
 
 
 class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
@@ -119,6 +118,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     _base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
 
     def __init__(self, request, client_address, server):
+        self.lock = threading.Lock()
         self.log = logger
 
         self.log.remove()
@@ -141,7 +141,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        with LOCK:
+        with self.lock:
             self.log.debug(rf"---> {data}")
             self.request.sendall(data)
             response = self.request.recv(65535)
@@ -168,7 +168,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         bytes_data += to_path
         bytes_data += file
 
-        with LOCK:
+        with self.lock:
             self.log.debug(rf"---> {bytes_data}")
             self.request.sendall(bytes_data)
             response = self.request.recv(65535)
@@ -192,7 +192,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        with LOCK:
+        with self.lock:
             self.log.debug(rf"---> {data}")
             self.request.sendall(data)
             response = self.request.recv(65535)
