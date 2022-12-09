@@ -1007,7 +1007,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         return False
 
     def any_elements_exists(self, xpath_list: List[str], wait_time: float = None, interval_time: float = None,
-                            raise_err: bool = None) -> bool:
+                            raise_err: bool = None) -> Optional[str]:
         """
         遍历列表中的元素，只要任意一个元素存在就返回 True
         :param xpath_list: xpath 列表
@@ -1030,12 +1030,12 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             for xpath in xpath_list:
                 result = self.element_exists(xpath, wait_time=0.05, interval_time=0.01)
                 if result:
-                    return True
+                    return xpath
             time.sleep(interval_time)
 
         if raise_err:
             raise TimeoutError("`any_elements_exists` 操作超时。")
-        return False
+        return None
 
     def element_is_selected(self, xpath: str) -> bool:
         """
