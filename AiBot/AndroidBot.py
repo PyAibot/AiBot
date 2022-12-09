@@ -924,7 +924,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         end_time = time.time() + wait_time
         while time.time() < end_time:
             for xpath in xpath_list:
-                result = self.click_element(xpath, wait_time=1, interval_time=1)
+                result = self.click_element(xpath, wait_time=0.05, interval_time=0.01)
                 if result:
                     return True
             time.sleep(interval_time)
@@ -1028,7 +1028,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         end_time = time.time() + wait_time
         while time.time() < end_time:
             for xpath in xpath_list:
-                result = self.element_exists(xpath, wait_time=1, interval_time=1)
+                result = self.element_exists(xpath, wait_time=0.05, interval_time=0.01)
                 if result:
                     return True
             time.sleep(interval_time)
