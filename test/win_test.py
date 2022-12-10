@@ -1,20 +1,21 @@
 import time
 
-from AiBot import WinBotMain
+from AiBot.WinBot import WinBotMain
 
 
-def main():
-    driver = WinBotMain.build(3333)
-    r = driver.find_window("TXGuiFoundation")
-    print(r)
+class CustomWinScript(WinBotMain):
+    log_level = "DEBUG"
 
-    r = driver.find_windows(window_name="Ai-Bot 2群等9个会话")
-    print(r)
-    print(len(r))
+    def script_main(self):
+        print(111)
+        result = self.find_window(window_name="Ai-Bot 3群等9个会话")
+        print(result)
 
-    result = driver.find_text("525178", "闲聊群1")
-    print(result)
+        while True:
+            time.sleep(5)
+            print(666)
 
 
 if __name__ == '__main__':
-    main()
+    # 监听 6666 号端口
+    CustomWinScript.execute(6666)
