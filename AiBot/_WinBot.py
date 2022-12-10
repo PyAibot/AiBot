@@ -10,7 +10,7 @@ from typing import Optional, List, Tuple, Union
 
 from loguru import logger
 
-from .utils import _protect, _Region, _Algorithm, _SubColors
+from ._utils import _protect, _Region, _Algorithm, _SubColors
 
 
 class _Point:

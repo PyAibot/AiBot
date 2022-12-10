@@ -1,4 +1,4 @@
-from .AndroidBot import AndroidBotMain
-from .WinBot import WinBotMain
+from ._AndroidBot import AndroidBotMain
+from ._WinBot import WinBotMain
 
 __all__ = ["AndroidBotMain", "WinBotMain"]

@@ -11,7 +11,7 @@ from typing import Optional, Dict, List, Tuple, Union
 
 from loguru import logger
 
-from .utils import _protect, _Region, _Algorithm, _SubColors
+from ._utils import _protect, _Region, _Algorithm, _SubColors
 
 
 # _LOG_PATH = Path(__file__).parent.resolve() / "logs"
