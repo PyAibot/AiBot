@@ -50,7 +50,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     _base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
 
     def __init__(self, request, client_address, server):
-        self.lock = threading.Lock()
+        self._lock = threading.Lock()
         self.log = logger
 
         self.log.remove()
@@ -73,7 +73,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        with self.lock:
+        with self._lock:
             self.log.debug(rf"---> {data}")
             self.request.sendall(data)
             response = self.request.recv(65535)
@@ -100,7 +100,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         bytes_data += to_path
         bytes_data += file
 
-        with self.lock:
+        with self._lock:
             self.log.debug(rf"---> {bytes_data}")
             self.request.sendall(bytes_data)
             response = self.request.recv(65535)
@@ -124,7 +124,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        with self.lock:
+        with self._lock:
             self.log.debug(rf"---> {data}")
             self.request.sendall(data)
             response = self.request.recv(65535)
