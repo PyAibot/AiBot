@@ -1,6 +1,7 @@
 import abc
 import socket
 import socketserver
+import subprocess
 import sys
 import threading
 import time
@@ -888,9 +889,11 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
 
     @classmethod
-    def execute(cls, listen_port: int):
+    def execute(cls, listen_port: int, local: bool = True):
         """
-        多线程启动 Socket 服务，执行脚本
+        多线程启动 Socket 服务
+        :param listen_port: 脚本监听的端口
+        :param local: 脚本是否部署在本地
         :return:
         """
 
@@ -901,6 +904,22 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
             0]
         *_, socket_address = address_info
+
+        # 如果是本地部署，则自动启动 WindowsDriver.exe
+        if local:
+            try:
+                subprocess.Popen(["WindowsDriver.exe", "127.0.0.1", str(listen_port)])
+            except FileNotFoundError as e:
+                err_msg = """
+                        异常排除步骤：
+                        1. 检查 Aibote.exe 路径是否存在中文；
+                        2. 是否启动 Aibote.exe 初始化环境变量；
+                        3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；
+                        4. 首次初始化环境变量后，是否重启开发工具；
+                        5. 是否以管理员权限启动开发工具；
+                        """
+                print("\033[92m", err_msg, "\033[0m")
+                raise e
 
         # 启动 Socket 服务
         sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
