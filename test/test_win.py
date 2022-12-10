@@ -1,6 +1,6 @@
 import time
 
-from AiBot._WinBot import WinBotMain
+from AiBot import WinBotMain
 
 
 class CustomWinScript(WinBotMain):
@@ -8,7 +8,7 @@ class CustomWinScript(WinBotMain):
 
     def script_main(self):
         print(111)
-        result = self.find_window(window_name="Ai-Bot 3群等9个会话")
+        result = self.find_windows()
         print(result)
 
         while True:

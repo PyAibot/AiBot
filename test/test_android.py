@@ -3,7 +3,7 @@ import time
 from AiBot import AndroidBotMain
 
 
-class CustomScript(AndroidBotMain):
+class CustomAndroidScript(AndroidBotMain):
 
     def script_main(self):
         self.show_toast("连接成功")
@@ -22,4 +22,4 @@ class CustomScript(AndroidBotMain):
 
 if __name__ == '__main__':
     # 监听 3333 号端口
-    CustomScript.execute(3333)
+    CustomAndroidScript.execute(3333)
