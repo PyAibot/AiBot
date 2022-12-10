@@ -1,26 +1,39 @@
+import abc
 import socket
+import socketserver
 import sys
-
-from typing import Optional
+import threading
+import time
+import re
+from ast import literal_eval
+from typing import Optional, List, Tuple
 
 from loguru import logger
 
-from AiBot._utils import _Point
+from ._utils import _protect, _Point, _Region, _Algorithm, _SubColors
 
 
-class WebBotMain:
+class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+
+class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
+    raise_err = False
+
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
 
     log_path = ""
-    log_level = "DEBUG"
+    log_level = "INFO"
     log_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
                  "<level>{level: <8}</level> | " \
                  "{thread.name: <8} | " \
                  "<cyan>{module}.{function}:{line}</cyan> | " \
                  "<level>{message}</level>"  # 日志内容
 
-    def __init__(self, port):
+    def __init__(self, request, client_address, server):
+        self._lock = threading.Lock()
         self.log = logger
 
         self.log.remove()
@@ -30,26 +43,7 @@ class WebBotMain:
             self.log.add(self.log_path, level=self.log_level.upper(), rotation="12:00", retention="15 days",
                          format=self.log_format)
 
-        address_info = socket.getaddrinfo("127.0.0.1", port, socket.AF_INET, socket.SOCK_STREAM)[0]
-        family, socket_type, proto, _, socket_address = address_info
-        self.__sock = socket.socket(family, socket_type, proto)
-        self.__sock.connect(socket_address)
-
-    @classmethod
-    def build(cls, host: str, port: int, browser: str, debug_port=0, user_data_dir="./UserData", browser_path=None,
-              argument=None) -> "WebBotMain":
-        """
-        :param host: webDriver服务地址。假如值为 "127.0.0.1"脚本会自动启动WebDriver.exe，如果是远程服务地址，用户需要手动启动WebDriver.exe 并且提供启动参数。
-        :param port: 端口
-        :param browser: 浏览器名称 "edge"和"chrome"，其他chromium内核浏览器需要指定browserPath参数
-        :param debug_port: 调试端口。默认 0 随机端口。指定端口则接管已打开的浏览器。启动浏览应指定的参数 --remote-debugging-port=19222 --user-data-dir=C:\\Users\\电脑用户名\\AppData\\Local\\Google\\Chrome\\User Data
-        :param user_data_dir: 用户数据目录,默认./UserData。多进程同时操作多个浏览器数据目录不能相同
-        :param browser_path: 浏览器路径
-        :param argument: 浏览器启动参数。例如：无头模式: --headless   设置代理：--proxy-server=127.0.0.1:8080
-        :return:
-        """
-        # subprocess.Popen(["WindowsDriver.exe", str(port)])
-        return WebBotMain(port)
+        super().__init__(request, client_address, server)
 
     def __send_data(self, *args) -> str:
         args_len = ""
@@ -69,13 +63,16 @@ class WebBotMain:
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        self.log.debug(rf"---> {data}")
-        self.__sock.sendall(data)
-        data_length, data = self.__sock.recv(65535).split(b"/", 1)
-
-        while int(data_length) > len(data):
-            data += self.__sock.recv(65535)
-        self.log.debug(rf"<--- {data}")
+        with self._lock:
+            self.log.debug(rf"->>> {data}")
+            self.request.sendall(data)
+            response = self.request.recv(65535)
+            if response == b"":
+                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
+            data_length, data = response.split(b"/", 1)
+            while int(data_length) > len(data):
+                data += self.request.recv(65535)
+            self.log.debug(rf"<<<- {data}")
 
         return data.decode("utf8").strip()
 
@@ -255,3 +252,41 @@ class WebBotMain:
     ###########
     # 键鼠操作 #
     ###########
+
+    # ##########
+    #   其他   #
+    ############
+    def handle(self) -> None:
+        # 设置阻塞模式
+        # self.request.setblocking(False)
+
+        # 设置缓冲区
+        # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65535)
+        self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024 * 1024)  # 发送缓冲区 10M
+
+        # 执行脚本
+        self.script_main()
+
+    @abc.abstractmethod
+    def script_main(self):
+        """脚本入口，由子类重写
+        """
+
+    @classmethod
+    def execute(cls, listen_port: int):
+        """
+        多线程启动 Socket 服务，执行脚本
+        :return:
+        """
+
+        if listen_port < 0 or listen_port > 65535:
+            raise OSError("`listen_port` must be in 0-65535.")
+
+        # 获取 IPv4 可用地址
+        address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
+            0]
+        *_, socket_address = address_info
+
+        # 启动 Socket 服务
+        sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
+        sock.serve_forever()

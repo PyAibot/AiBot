@@ -32,9 +32,6 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                  "<cyan>{module}.{function}:{line}</cyan> | " \
                  "<level>{message}</level>"  # 日志内容
 
-    # 基础存储路径
-    _base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
-
     def __init__(self, request, client_address, server):
         self._lock = threading.Lock()
         self.log = logger
