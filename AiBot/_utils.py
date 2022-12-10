@@ -2,7 +2,33 @@ import abc
 from typing import Union, Tuple, List
 
 
+class _Point:
 
+    def __init__(self, x: float, y: float):
+        self.x = x
+        self.y = y
+
+    def get_points_center(self, other_point: "_Point") -> "_Point":
+        """
+        获取两个坐标点的中间坐标
+        :param other_point: 其他的坐标点
+        :return:
+        """
+        return self.__class__(x=self.x + (other_point.x - self.x) / 2, y=self.y + (other_point.y - self.y) / 2)
+
+    def __getitem__(self, item: int):
+        if item == 0:
+            return self.x
+        elif item == 1:
+            return self.y
+        else:
+            raise IndexError("list index out of range")
+
+    def __repr__(self):
+        return f"Point(x={self.x}, y={self.y})"
+
+
+_Point_Tuple = Union[_Point, Tuple[int, int]]
 _Region = Tuple[int, int, int, int]
 _Algorithm = Tuple[int, int, int]
 _SubColors = List[Tuple[int, int, str]]

@@ -1,59 +1,11 @@
-import re
 import socket
-import subprocess
 import sys
-import time
-from ast import literal_eval
 
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from loguru import logger
 
-
-class _Point:
-
-    def __init__(self, x: float, y: float):
-        self.x = x
-        self.y = y
-
-    def __getitem__(self, item: int):
-        if item == 0:
-            return self.x
-        elif item == 1:
-            return self.y
-        else:
-            raise IndexError("list index out of range")
-
-    def __repr__(self):
-        return f"Point(x={self.x}, y={self.y})"
-
-    # def __init__(self, x, y, driver: "WinBotMain"):
-    #     self.x = x
-    #     self.y = y
-    #     self.__driver = driver
-    #
-    # def click(self, offset_x: float = 0, offset_y: float = 0):
-    #     """
-    #     点击坐标
-    #     :param offset_x: 坐标 x 轴偏移量；
-    #     :param offset_y: 坐标 y 轴偏移量；
-    #     :return:
-    #     """
-    #     self.__driver.click(self, offset_x=offset_x, offset_y=offset_y)
-    #
-    # def get_points_center(self, other_point: "_Point") -> "_Point":
-    #     """
-    #     获取两个坐标点的中间坐标
-    #     :param other_point: 其他的坐标点
-    #     :return:
-    #     """
-    #     return self.__class__(x=self.x + (other_point.x - self.x) / 2, y=self.y + (other_point.y - self.y) / 2,
-    #                           driver=self.__driver)
-
-
-_Region = Tuple[float, float, float, float]
-_Algorithm = Tuple[int, int, int]
-_SubColors = List[Tuple[int, int, str]]
+from AiBot._utils import _Point
 
 
 class WebBotMain:
@@ -293,7 +245,7 @@ class WebBotMain:
         :return:
         """
 
-    def clear_element(self, xpath:str)-> bool:
+    def clear_element(self, xpath: str) -> bool:
         """
         清除元素值
         :param xpath:

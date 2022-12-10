@@ -6,39 +6,11 @@ import threading
 import time
 import re
 from ast import literal_eval
-from typing import Optional, List, Tuple, Union
+from typing import Optional, List, Tuple
 
 from loguru import logger
 
-from ._utils import _protect, _Region, _Algorithm, _SubColors
-
-
-class _Point:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def get_points_center(self, other_point: "_Point") -> "_Point":
-        """
-        获取两个坐标点的中间坐标
-        :param other_point: 其他的坐标点
-        :return:
-        """
-        return self.__class__(x=self.x + (other_point.x - self.x) / 2, y=self.y + (other_point.y - self.y) / 2)
-
-    def __getitem__(self, item):
-        if item == 0:
-            return self.x
-        elif item == 1:
-            return self.y
-        else:
-            raise IndexError("list index out of range")
-
-    def __repr__(self):
-        return f"Point(x={self.x}, y={self.y})"
-
-
-_Point_ = Union[_Point, Tuple[int, int]]
+from ._utils import _protect, _Point, _Region, _Algorithm, _SubColors
 
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
@@ -214,8 +186,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("rollMouse", hwnd, x, y, count, mode) == "true"
 
-    def click_mouse(self, hwnd: str, x: float, y: float, typ: int, mode: bool = False,
-                    ele_hwnd: str = "0") -> bool:
+    def click_mouse(self, hwnd: str, x: float, y: float, typ: int, mode: bool = False, ele_hwnd: str = "0") -> bool:
         """
         鼠标点击
         :param hwnd: 当前窗口句柄

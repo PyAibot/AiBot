@@ -62,7 +62,7 @@ class _Point:
         return f"Point(x={self.x}, y={self.y})"
 
 
-_Point_ = Union[_Point, Tuple[int, int]]
+_Point_Tuple = Union[_Point, Tuple[int, int]]
 
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
@@ -229,7 +229,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     # #############
     #   色值相关   #
     # #############
-    def get_color(self, point: _Point_) -> Optional[str]:
+    def get_color(self, point: _Point_Tuple) -> Optional[str]:
         """
         获取指定坐标点的色值，返回色值字符串(#008577)或者 None
         :param point: 坐标点；
@@ -525,7 +525,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     # ################
     #   坐标操作相关   #
     # ################
-    def click(self, point: _Point_, offset_x: float = 0, offset_y: float = 0) -> bool:
+    def click(self, point: _Point_Tuple, offset_x: float = 0, offset_y: float = 0) -> bool:
         """
         点击坐标
         :param point: 坐标；
@@ -535,7 +535,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("click", point[0] + offset_x, point[1] + offset_y) == "true"
 
-    def double_click(self, point: _Point_, offset_x: float = 0, offset_y: float = 0) -> bool:
+    def double_click(self, point: _Point_Tuple, offset_x: float = 0, offset_y: float = 0) -> bool:
         """
         双击坐标
         :param point: 坐标；
@@ -545,7 +545,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("doubleClick", point[0] + offset_x, point[1] + offset_y) == "true"
 
-    def long_click(self, point: _Point_, duration: float, offset_x: float = 0, offset_y: float = 0) -> bool:
+    def long_click(self, point: _Point_Tuple, duration: float, offset_x: float = 0, offset_y: float = 0) -> bool:
         """
         长按坐标
         :param point: 坐标；
@@ -556,7 +556,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("longClick", point[0] + offset_x, point[1] + offset_y, duration * 1000) == "true"
 
-    def swipe(self, start_point: _Point_, end_point: _Point_, duration: float) -> bool:
+    def swipe(self, start_point: _Point_Tuple, end_point: _Point_Tuple, duration: float) -> bool:
         """
         滑动坐标
         :param start_point: 起始坐标；
@@ -567,7 +567,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         return self.__send_data("swipe", start_point[0], start_point[1], end_point[0], end_point[1],
                                 duration * 1000) == "true"
 
-    def gesture(self, gesture_path: List[_Point_], duration: float) -> bool:
+    def gesture(self, gesture_path: List[_Point_Tuple], duration: float) -> bool:
         """
         执行手势
         :param gesture_path: 手势路径，由一系列坐标点组成
