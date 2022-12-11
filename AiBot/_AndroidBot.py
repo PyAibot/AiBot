@@ -584,12 +584,15 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
     def press(self):
         """TODO"""
+        raise NotImplementedError()
 
     def move(self):
         """TODO"""
+        raise NotImplementedError()
 
     def release(self):
         """TODO"""
+        raise NotImplementedError()
 
     # ##############
     #   OCR 相关   #
@@ -1192,9 +1195,11 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
     def write_android_file(self):
         """TODO"""
+        raise NotImplementedError()
 
     def read_android_file(self):
         """TODO"""
+        raise NotImplementedError()
 
     def back(self) -> bool:
         """
@@ -1314,9 +1319,11 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
     def create_web_view(self):
         """TODO"""
+        raise NotImplementedError()
 
     def clear_script_widget(self):
         """TODO"""
+        raise NotImplementedError()
 
     def get_script_params(self) -> Optional[dict]:
         """

@@ -7,11 +7,13 @@ class CustomWebScript(WebBotMain):
     log_level = "DEBUG"
 
     def script_main(self):
-        print(111)
+        self.goto("https://www.baidu.com")
+        time.sleep(3)
+        self.new_page("https://www.qq.com")
+        time.sleep(3)
 
-        while True:
-            time.sleep(5)
-            print(666)
+        result = self.execute_script('(()=>"aibote rpa")()')
+        print(result)  # aibote rpa
 
 
 if __name__ == '__main__':
