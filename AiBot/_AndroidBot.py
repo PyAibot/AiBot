@@ -1283,6 +1283,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     # ##############
     def create_text_view(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
         """
+        创建文本框控件
         :param _id:  控件ID，不可与其他控件重复
         :param text:  控件文本
         :param x:  控件在屏幕上x坐标
@@ -1295,6 +1296,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
     def create_edit_view(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 150):
         """
+        创建编辑框控件
         :param _id:  控件ID，不可与其他控件重复
         :param text:  控件文本
         :param x:  控件在屏幕上x坐标
@@ -1307,6 +1309,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
     def create_check_box(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
         """
+        创建复选框控件
         :param _id:  控件ID，不可与其他控件重复
         :param text:  控件文本
         :param x:  控件在屏幕上x坐标
@@ -1327,6 +1330,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
     def get_script_params(self) -> Optional[dict]:
         """
+        获取脚本参数
         :return:
         """
         response = self.__send_data("getScriptParam")
