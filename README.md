@@ -9,12 +9,12 @@ pip install AiBot.py
 #### 使用 AndroidBot 编写脚本
 
 ```python
-# 1. 导入 AiBotMain 类
+# 1. 导入 AndroidBotMain 类
 from AiBot import AndroidBotMain
 
 
-# 2. 自定义一个脚本类，继承 AiBotMain
-class CustomScript(AndroidBotMain):
+# 2. 自定义一个脚本类，继承 AndroidBotMain
+class CustomAndroidScript(AndroidBotMain):
     # 3. 设置等待参数
     # 3.1 设置等待时间
     wait_timeout = 3
@@ -30,7 +30,7 @@ class CustomScript(AndroidBotMain):
     # 6. 重写方法，编写脚本
     # 注意：此方法是脚本执行入口
     def script_main(self):
-        # 6. API 演示
+        # 6.1 API 演示
         # 注意：Python 版本支持的 Api 与 Nodejs 基本相同
         # 教程中仅演示部分 Api，更多 Api 请自行探索，所有 Api 均包含详细的参数要求和返回值，请自行查看。
 
@@ -50,7 +50,7 @@ class CustomScript(AndroidBotMain):
 if __name__ == '__main__':
     # 注意：此处监听的端口号，必须和手机端的脚本端口号一致；
     # 监听 3333 号端口
-    CustomScript.execute(3333)
+    CustomAndroidScript.execute(3333)
 ```
 
 > 教程中仅演示部分 Api，更多 Api 请自行探索，所有 Api 均包含详细的参数要求和返回值，请自行查看。
@@ -62,7 +62,7 @@ if __name__ == '__main__':
 from AiBot import WinBotMain
 
 
-# 2. 自定义一个脚本类，继承 AiBotMain
+# 2. 自定义一个脚本类，继承 WinBotMain
 class CustomWinScript(WinBotMain):
     # 3. 设置等待参数
     # 3.1 设置等待时间
@@ -79,7 +79,7 @@ class CustomWinScript(WinBotMain):
     # 6. 重写方法，编写脚本
     # 注意：此方法是脚本执行入口
     def script_main(self):
-        # 6. API 演示
+        # 6.1 API 演示
         # 注意：Python 版本支持的 Api 与 Nodejs 基本相同
         # 教程中仅演示部分 Api，更多 Api 请自行探索，所有 Api 均包含详细的参数要求和返回值，请自行查看。
 
@@ -113,7 +113,7 @@ import time
 from AiBot import WebBotMain
 
 
-# 2. 自定义一个脚本类，继承 AiBotMain
+# 2. 自定义一个脚本类，继承 WebBotMain
 class CustomWebScript(WebBotMain):
     # 3. 设置等待参数
     # 3.1 设置等待时间
