@@ -1,6 +1,6 @@
-## Aibote.py 使用方法说明
+## AiBot.py 使用方法说明
 
-### 下载安装 Aibote.py
+### 下载安装 AiBot.py
 
 ```shell
 pip install AiBot.py
