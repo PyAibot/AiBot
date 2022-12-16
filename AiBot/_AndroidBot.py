@@ -589,7 +589,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param duration: 持续时间
         :return:
         """
-        return self.__send_data("press", point[0], point[1], duration) == "true"
+        return self.__send_data("press", point[0], point[1], duration * 1000) == "true"
 
     def move(self, point: _Point_Tuple, duration: float) -> bool:
         """
@@ -598,7 +598,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param duration: 持续时间
         :return:
         """
-        return self.__send_data("move", point[0], point[1], duration) == "true"
+        return self.__send_data("move", point[0], point[1], duration * 1000) == "true"
 
     def release(self) -> bool:
         """手指抬起"""
