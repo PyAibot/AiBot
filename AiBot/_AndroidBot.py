@@ -582,17 +582,27 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         return self.__send_data("dispatchGesture", gesture_path_str, duration) == "true"
 
-    def press(self):
-        """TODO"""
-        raise NotImplementedError()
+    def press(self, point: _Point_Tuple, duration: float) -> bool:
+        """
+        手指按下
+        :param point: 坐标
+        :param duration: 持续时间
+        :return:
+        """
+        return self.__send_data("press", point[0], point[1], duration) == "true"
 
-    def move(self):
-        """TODO"""
-        raise NotImplementedError()
+    def move(self, point: _Point_Tuple, duration: float) -> bool:
+        """
+        手指移动
+        :param point: 坐标
+        :param duration: 持续时间
+        :return:
+        """
+        return self.__send_data("move", point[0], point[1], duration) == "true"
 
-    def release(self):
-        """TODO"""
-        raise NotImplementedError()
+    def release(self) -> bool:
+        """手指抬起"""
+        return self.__send_data("release") == "true"
 
     # ##############
     #   OCR 相关   #
@@ -1193,13 +1203,13 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("sendVk", vk) == "true"
 
-    def write_android_file(self):
-        """TODO"""
-        raise NotImplementedError()
-
-    def read_android_file(self):
-        """TODO"""
-        raise NotImplementedError()
+    # def write_android_file(self):
+    #     """TODO"""
+    #     raise NotImplementedError()
+    #
+    # def read_android_file(self):
+    #     """TODO"""
+    #     raise NotImplementedError()
 
     def back(self) -> bool:
         """
@@ -1320,13 +1330,25 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("createCheckBox", _id, text, x, y, width, height)
 
-    def create_web_view(self):
-        """TODO"""
-        raise NotImplementedError()
+    def create_web_view(self, _id: int, url: str, x: int = -1, y: int = -1, width: int = -1, height: int = -1) -> bool:
+        """
+        创建WebView控件
+        :param _id: 控件ID，不可与其他控件重复
+        :param url: 加载的链接
+        :param x: 控件在屏幕上 x 坐标，值为 -1 时自动填充宽高
+        :param y: 控件在屏幕上 y 坐标，值为 -1 时自动填充宽高
+        :param width: 控件宽度，值为 -1 时自动填充宽高
+        :param height: 控件高度，值为 -1 时自动填充宽高
+        :return:
+        """
+        return self.__send_data("createWebView", _id, url, x, y, width, height) == "true"
 
-    def clear_script_widget(self):
-        """TODO"""
-        raise NotImplementedError()
+    def clear_script_widget(self) -> bool:
+        """
+        清除脚本控件
+        :return:
+        """
+        return self.__send_data("clearScriptControl") == "true"
 
     def get_script_params(self) -> Optional[dict]:
         """
