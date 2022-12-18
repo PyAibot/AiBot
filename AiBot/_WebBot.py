@@ -439,21 +439,21 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     ###############
     #   窗口操作   #
     ###############
-    def get_window_pos(self):
+    def get_window_pos(self) -> Optional[dict]:
         """
-        获取窗口位置和状态
+        获取窗口位置和状态；
+        返回窗口左上角坐标点，宽度和高度，状态
         :return:
         """
         response = self.__send_data("getWindowPos")
         if response == "null":
             return None
         resp: dict = json.loads(response)
-        result = {
-            "rect": (_Point(x=float(resp.get("left")), y=float(resp.get("top"))),
-                     _Point(x=float(resp.get("right")), y=float(resp.get("bottom")))),
+        return {
+            "pos": _Point(x=float(resp.get("left")), y=float(resp.get("top"))),
+            "size": {"width": float(resp.get("width")), "height": float(resp.get("height"))},
             "status": resp.get("windowState")
         }
-        return result
 
     ###############
     #   Cookies   #
