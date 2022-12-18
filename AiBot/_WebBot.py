@@ -157,13 +157,6 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("switchPage", page_id) == "true"
 
-    # def close_page(self, page_id: str) -> bool:
-    #     """
-    #     关闭指定页面
-    #     :param page_id:
-    #     :return:
-    #     """
-    #     return self.__send_data("closePage", page_id) == "true"
     def close_current_page(self) -> bool:
         """
         关闭当前页面
@@ -330,7 +323,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
     def send_keys(self, xpath: str, value: str) -> bool:
         """
-        输入值
+        输入值；如果元素不能设置焦点，应先 click_mouse 点击元素获得焦点后再输入
         :param xpath:
         :param value:
         :return:
@@ -367,13 +360,14 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     ###########
     # 键鼠操作 #
     ###########
-    def click_mouse(self, point: _Point_Tuple) -> bool:
+    def click_mouse(self, point: _Point_Tuple, typ: int) -> bool:
         """
         点击鼠标
         :param point: 坐标点
+        :param typ: 点击类型，单击左键:1 单击右键:2 按下左键:3 弹起左键:4 按下右键:5 弹起右键:6 双击左键:7
         :return:
         """
-        return self.__send_data("clickMouse", point[0], point[1]) == "true"
+        return self.__send_data("clickMouse", point[0], point[1], typ) == "true"
 
     def move_mouse(self, point: _Point_Tuple) -> bool:
         """
@@ -383,47 +377,51 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("moveMouse", point[0], point[1]) == "true"
 
-    def scroll_mouse(self, start_p: _Point_Tuple, end_p: _Point_Tuple) -> bool:
+    def scroll_mouse(self, offset_x: float, offset_y: float, x: float = 0, y: float = 0) -> bool:
         """
         滚动鼠标
-        :param start_p: 开始坐标点
-        :param end_p: 结束坐标点
+        :param offset_x: 水平滚动条移动的距离
+        :param offset_y: 垂直滚动条移动的距离
+        :param x: 鼠标横坐标位置， 默认为0
+        :param y: 鼠标纵坐标位置， 默认为0
         :return:
         """
-        return self.__send_data("wheelMouse", start_p[0], start_p[1], end_p[0], end_p[1]) == "true"
+        return self.__send_data("wheelMouse", offset_x, offset_y, x, y) == "true"
 
-    def click_mouse_by_element(self, xpath: str) -> bool:
+    def click_mouse_by_element(self, xpath: str, typ: int) -> bool:
         """
-        根据元素位置点击鼠标
+        根据元素位置点击鼠标(元素中心点)
         :param xpath:
+        :param typ: 点击类型，单击左键:1 单击右键:2 按下左键:3 弹起左键:4 按下右键:5 弹起右键:6 双击左键:7
         :return:
         """
-        return self.__send_data("clickMouseByXpath", xpath) == "true"
+        return self.__send_data("clickMouseByXpath", xpath, typ) == "true"
 
     def move_to_element(self, xpath: str) -> bool:
         """
-        移动鼠标到元素位置
+        移动鼠标到元素位置(元素中心点)
         :param xpath:
         :return:
         """
         return self.__send_data("moveMouseByXpath", xpath) == "true"
 
-    def scroll_to_element(self, xpath: str) -> bool:
+    def scroll_mouse_by_element(self, xpath: str, offset_x: float, offset_y: float) -> bool:
         """
-        滚动鼠标到元素位置
-        :param xpath:
+        根据元素位置滚动鼠标
+        :param offset_x: 水平滚动条移动的距离
+        :param offset_y: 垂直滚动条移动的距离
         :return:
         """
-        return self.__send_data("wheelMouseByXpath", xpath) == "true"
+        return self.__send_data("wheelMouseByXpath", xpath, offset_x, offset_y) == "true"
 
     #############
     #   Alert   #
     #############
-    def click_alert(self, accept: bool, prompt_text: str) -> bool:
+    def click_alert(self, accept: bool, prompt_text: str = "") -> bool:
         """
         点击警告框
         :param accept: 确认或取消
-        :param prompt_text: 警告框文本
+        :param prompt_text: 可选参数，输入的警告框文本
         :return:
         """
         return self.__send_data("clickAlert", accept, prompt_text) == "true"
