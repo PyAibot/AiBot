@@ -149,7 +149,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("showWindow", hwnd, show) == "true"
 
-    def set_window_top(self, hwnd: str, top: bool = True) -> bool:
+    def set_window_top(self, hwnd: str, top: bool) -> bool:
         """
         设置窗口到最顶层
         :param hwnd: 当前窗口句柄
