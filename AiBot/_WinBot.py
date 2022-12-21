@@ -149,13 +149,14 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("showWindow", hwnd, show) == "true"
 
-    def set_window_top(self, hwnd: str) -> bool:
+    def set_window_top(self, hwnd: str, top: bool = True) -> bool:
         """
         设置窗口到最顶层
         :param hwnd: 当前窗口句柄
+        :param top: 是否置顶，True 置顶， False 取消置顶
         :return:
         """
-        return self.__send_data("setWindowTop", hwnd) == "true"
+        return self.__send_data("setWindowTop", hwnd, top) == "true"
 
     # #############
     #   键鼠操作   #
@@ -329,7 +330,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             sub_colors_str = ""
             for sub_color in sub_colors:
                 offset_x, offset_y, color_str = sub_color
-                sub_colors_str += f"{offset_x}{offset_y}{color_str}\n"
+                sub_colors_str += f"{offset_x}/{offset_y}/{color_str}\n"
             # 去除最后一个 \n
             sub_colors_str = sub_colors_str.strip()
         else:
