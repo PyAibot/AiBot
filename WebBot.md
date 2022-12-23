@@ -75,7 +75,7 @@ def close_current_page() -> bool:
     """
 
 
-def ger_current_url() -> Optional[str]:
+def get_current_url() -> Optional[str]:
     """
     获取当前页面 URL
     :return:
