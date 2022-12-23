@@ -576,13 +576,11 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         :param local: 脚本是否部署在本地
         :param driver_params: Web 驱动启动参数
         :return:
-
-        driver_params = {}
         """
 
         if listen_port < 0 or listen_port > 65535:
             raise OSError("`listen_port` must be in 0-65535.")
-
+        print("启动服务...")
         # 获取 IPv4 可用地址
         address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
             0]
@@ -602,6 +600,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             if driver_params:
                 default_params.update(driver_params)
             default_params = json.dumps(default_params)
+            print("尝试本地启动 WebDriver ...")
             try:
                 subprocess.Popen(["WebDriver.exe", default_params])
             except FileNotFoundError as e:
