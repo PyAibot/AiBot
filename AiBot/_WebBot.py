@@ -164,7 +164,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("closePage") == "true"
 
-    def ger_current_url(self) -> Optional[str]:
+    def get_current_url(self) -> Optional[str]:
         """
         获取当前页面 URL
         :return:
