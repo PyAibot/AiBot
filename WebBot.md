@@ -319,9 +319,10 @@ def get_alert_text() -> Optional[str]:
 ###############
 #   窗口操作   #
 ###############
-def get_window_pos():
+def get_window_pos() -> Optional[dict]:
     """
-    获取窗口位置和状态
+    获取窗口位置、尺寸和状态；
+    返回窗口左上角坐标点，宽度和高度，状态
     :return:
     """
 

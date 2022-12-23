@@ -55,10 +55,11 @@ def show_window(hwnd: str, show: bool) -> bool:
     """
 
 
-def set_window_top(hwnd: str) -> bool:
+def set_window_top(hwnd: str, top: bool = True) -> bool:
     """
     设置窗口到最顶层
     :param hwnd: 当前窗口句柄
+    :param top: 是否置顶，True 置顶， False 取消置顶
     :return:
     """
 
@@ -430,7 +431,7 @@ def start_process(cmd: str, show_window=True, is_wait=False) -> bool:
 
 def download_file(url: str, file_path: str, is_wait: bool) -> bool:
     """
-
+    下载文件
     :param url: 文件地址
     :param file_path: 文件保存的路径
     :param is_wait: 是否等待下载完成

@@ -862,7 +862,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
     def download_file(self, url: str, file_path: str, is_wait: bool) -> bool:
         """
-
+        下载文件
         :param url: 文件地址
         :param file_path: 文件保存的路径
         :param is_wait: 是否等待下载完成
