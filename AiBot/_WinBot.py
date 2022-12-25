@@ -862,7 +862,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
     def download_file(self, url: str, file_path: str, is_wait: bool) -> bool:
         """
-
+        下载文件
         :param url: 文件地址
         :param file_path: 文件保存的路径
         :param is_wait: 是否等待下载完成
@@ -900,7 +900,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
         if listen_port < 0 or listen_port > 65535:
             raise OSError("`listen_port` must be in 0-65535.")
-
+        print("启动服务...")
         # 获取 IPv4 可用地址
         address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
             0]
@@ -908,6 +908,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
         # 如果是本地部署，则自动启动 WindowsDriver.exe
         if local:
+            print("尝试本地启动 WindowsDriver ...")
             try:
                 subprocess.Popen(["WindowsDriver.exe", "127.0.0.1", str(listen_port)])
             except FileNotFoundError as e:
