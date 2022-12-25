@@ -532,7 +532,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def find_text(self, hwnd_or_image_path: str, text: str, region: _Region = None, mode: bool = False) -> List[_Point]:
         """
         通过 OCR 识别窗口/图片中的文字，返回文字列表
-        :param hwnd_or_image_path: 识别区域，默认全屏；
+        :param hwnd_or_image_path: 句柄或者图片路径；
         :param text: 要查找的文字；
         :param region: 识别区域，默认全屏；
         :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
