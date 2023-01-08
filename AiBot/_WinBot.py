@@ -908,18 +908,11 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
         # 如果是本地部署，则自动启动 WindowsDriver.exe
         if local:
-            print("尝试本地启动 WindowsDriver ...")
             try:
+                print("尝试本地启动 WindowsDriver ...")
                 subprocess.Popen(["WindowsDriver.exe", "127.0.0.1", str(listen_port)])
             except FileNotFoundError as e:
-                err_msg = """
-                        异常排除步骤：
-                        1. 检查 Aibote.exe 路径是否存在中文；
-                        2. 是否启动 Aibote.exe 初始化环境变量；
-                        3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；
-                        4. 首次初始化环境变量后，是否重启开发工具；
-                        5. 是否以管理员权限启动开发工具；
-                        """
+                err_msg = "\n异常排除步骤：\n1. 检查 Aibote.exe 路径是否存在中文；\n2. 是否启动 Aibote.exe 初始化环境变量；\n3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；\n4. 首次初始化环境变量后，是否重启开发工具；\n5. 是否以管理员权限启动开发工具；\n"
                 print("\033[92m", err_msg, "\033[0m")
                 raise e
 

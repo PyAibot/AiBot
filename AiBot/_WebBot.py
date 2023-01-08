@@ -600,18 +600,11 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             if driver_params:
                 default_params.update(driver_params)
             default_params = json.dumps(default_params)
-            print("尝试本地启动 WebDriver ...")
             try:
+                print("尝试本地启动 WebDriver ...")
                 subprocess.Popen(["WebDriver.exe", default_params])
             except FileNotFoundError as e:
-                err_msg = """
-                异常排除步骤：
-                1. 检查 Aibote.exe 路径是否存在中文；
-                2. 是否启动 Aibote.exe 初始化环境变量；
-                3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；
-                4. 首次初始化环境变量后，是否重启开发工具；
-                5. 是否以管理员权限启动开发工具；
-                """
+                err_msg = "\n异常排除步骤：\n1. 检查 Aibote.exe 路径是否存在中文；\n2. 是否启动 Aibote.exe 初始化环境变量；\n3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；\n4. 首次初始化环境变量后，是否重启开发工具；\n5. 是否以管理员权限启动开发工具；\n"
                 print("\033[92m", err_msg, "\033[0m")
                 raise e
 
