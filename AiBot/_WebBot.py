@@ -1,10 +1,12 @@
 import abc
 import json
+import random
 import socket
 import socketserver
 import subprocess
 import sys
 import threading
+import time
 from typing import Optional, Tuple, Any
 
 from loguru import logger
@@ -595,7 +597,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 "serverPort": listen_port,
                 "browserName": "chrome",
                 "debugPort": 0,
-                "userDataDir": "./UserData",
+                "userDataDir": f"./UserData{random.randint(100000, 999999)}",
                 "browserPath": None,
                 "argument": None,
             }
