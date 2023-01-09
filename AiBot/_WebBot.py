@@ -408,6 +408,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def scroll_mouse_by_element(self, xpath: str, offset_x: float, offset_y: float) -> bool:
         """
         根据元素位置滚动鼠标
+        :param xpath: 元素路径
         :param offset_x: 水平滚动条移动的距离
         :param offset_y: 垂直滚动条移动的距离
         :return:
