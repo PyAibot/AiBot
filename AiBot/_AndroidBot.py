@@ -27,7 +27,7 @@ from ._utils import _protect, _Region, _Algorithm, _SubColors
 # logger.add(_LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days")
 
 class _Point:
-    def __init__(self, x, y, driver: "AndroidBotMain"):
+    def __init__(self, x: float, y: float, driver: "AndroidBotMain"):
         self.x = x
         self.y = y
         self.__driver = driver
@@ -62,7 +62,7 @@ class _Point:
         return f"Point(x={self.x}, y={self.y})"
 
 
-_Point_Tuple = Union[_Point, Tuple[int, int]]
+_Point_Tuple = Union[_Point, Tuple[float, float]]
 
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):

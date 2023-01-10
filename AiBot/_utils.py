@@ -28,8 +28,8 @@ class _Point:
         return f"Point(x={self.x}, y={self.y})"
 
 
-_Point_Tuple = Union[_Point, Tuple[int, int]]
-_Region = Tuple[int, int, int, int]
+_Point_Tuple = Union[_Point, Tuple[float, float]]
+_Region = Tuple[float, float, float, float]
 _Algorithm = Tuple[int, int, int]
 _SubColors = List[Tuple[int, int, str]]
 
