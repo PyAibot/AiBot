@@ -273,7 +273,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         if not region:
             region = [0, 0, 0, 0]
@@ -376,7 +376,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         if not region:
             region = [0, 0, 0, 0]
@@ -431,7 +431,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         if not region:
             region = [0, 0, 0, 0]
@@ -670,7 +670,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -705,7 +705,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -738,7 +738,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -772,7 +772,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -804,7 +804,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -836,7 +836,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -876,7 +876,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -908,7 +908,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -940,7 +940,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             interval_time = self.interval_timeout
 
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -979,7 +979,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :return:
         """
         if raise_err is None:
-            interval_time = self.raise_err
+            raise_err = self.raise_err
 
         if direction == 1:
             _end_point = (500, 300)
