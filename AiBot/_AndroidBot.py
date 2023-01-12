@@ -391,7 +391,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
-            response = self.__send_data("matchTemplate", self._base_path + image_name, *region, similarity,
+            response = self.__send_data("findImage", self._base_path + image_name, *region, similarity,
                                         algorithm_type, threshold, max_val, multi)
             # 找图失败
             if response == "-1.0|-1.0":
