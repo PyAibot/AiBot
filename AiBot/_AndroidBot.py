@@ -26,6 +26,15 @@ from ._utils import _protect, _Region, _Algorithm, _SubColors
 # # 按时间分割，每日 12:00 分割一次，保留 15 天
 # logger.add(_LOG_PATH / "runtime_{time}.log", rotation="12:00", retention="15 days")
 
+# 高级方法
+# debug_fo = logger.add("debug.log", filter=lambda record: record["level"].name == "DEBUG")
+# debug_logger = logger.bind(name=debug_fo)
+
+# logger.add("a.log", filter=lambda record: record["extra"].get("name") == "a")
+# logger.add("b.log", filter=lambda record: record["extra"].get("name") == "b")
+# logger_a = logger.bind(name="a")
+# logger_b = logger.bind(name="b")
+
 class _Point:
     def __init__(self, x: float, y: float, driver: "AndroidBotMain"):
         self.x = x
@@ -95,8 +104,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         self.log.add(sys.stdout, level=self.log_level.upper(), format=self.log_format)
 
         if self.log_path:
-            self.log.add(self.log_path, level=self.log_level.upper(), rotation="12:00", retention="15 days",
-                         format=self.log_format)
+            self.log.add(self.log_path, level=self.log_level.upper(), format=self.log_format,
+                         rotation='100 MB', retention='2 days')
 
         super().__init__(request, client_address, server)
 
