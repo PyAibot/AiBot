@@ -398,8 +398,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         end_time = time.time() + wait_time
         while time.time() < end_time:
             response = self.__send_data("findImage", hwnd, image_path, *region, similarity, algorithm_type,
-                                        threshold,
-                                        max_val, multi, mode)
+                                        threshold, max_val, multi, mode)
             # 找图失败
             if response in ["-1.0|-1.0", "-1|-1"]:
                 time.sleep(interval_time)
