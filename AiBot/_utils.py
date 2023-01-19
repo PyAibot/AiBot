@@ -2,13 +2,13 @@ import abc
 from typing import Union, Tuple, List
 
 
-class _Point:
+class Point:
 
     def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
 
-    def get_points_center(self, other_point: "_Point") -> "_Point":
+    def get_points_center(self, other_point: "Point") -> "Point":
         """
         获取两个坐标点的中间坐标
         :param other_point: 其他的坐标点
@@ -28,7 +28,7 @@ class _Point:
         return f"Point(x={self.x}, y={self.y})"
 
 
-_Point_Tuple = Union[_Point, Tuple[float, float]]
+_Point_Tuple = Union[Point, Tuple[float, float]]
 _Region = Tuple[float, float, float, float]
 _Algorithm = Tuple[int, int, int]
 _SubColors = List[Tuple[int, int, str]]

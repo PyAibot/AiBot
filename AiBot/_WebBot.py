@@ -6,12 +6,11 @@ import socketserver
 import subprocess
 import sys
 import threading
-import time
 from typing import Optional, Tuple, Any
 
 from loguru import logger
 
-from ._utils import _protect, _Point, _Point_Tuple
+from ._utils import _protect, Point, _Point_Tuple
 
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
@@ -228,7 +227,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             return None
         return response
 
-    def get_element_rect(self, xpath: str) -> Optional[Tuple[_Point, _Point]]:
+    def get_element_rect(self, xpath: str) -> Optional[Tuple[Point, Point]]:
         """
         获取元素矩形坐标
         :param xpath:
@@ -238,8 +237,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         if response == "null":
             return None
         rect: dict = json.loads(response)
-        return (_Point(x=float(rect.get("left")), y=float(rect.get("top"))),
-                _Point(x=float(rect.get("right")), y=float(rect.get("bottom"))))
+        return (Point(x=float(rect.get("left")), y=float(rect.get("top"))),
+                Point(x=float(rect.get("right")), y=float(rect.get("bottom"))))
 
     def get_element_attr(self, xpath: str, attr_name: str) -> Optional[str]:
         """
@@ -454,7 +453,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             return None
         resp: dict = json.loads(response)
         return {
-            "pos": _Point(x=float(resp.get("left")), y=float(resp.get("top"))),
+            "pos": Point(x=float(resp.get("left")), y=float(resp.get("top"))),
             "size": {"width": float(resp.get("width")), "height": float(resp.get("height"))},
             "status": resp.get("windowState")
         }
