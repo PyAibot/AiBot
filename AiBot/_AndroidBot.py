@@ -36,7 +36,7 @@ from ._utils import _protect, _Region, _Algorithm, _SubColors
 # logger_a = logger.bind(name="a")
 # logger_b = logger.bind(name="b")
 
-class _Point:
+class Point:
     def __init__(self, x: float, y: float, driver: "AndroidBotMain"):
         self.x = x
         self.y = y
@@ -51,7 +51,7 @@ class _Point:
         """
         self.__driver.click(self, offset_x=offset_x, offset_y=offset_y)
 
-    def get_points_center(self, other_point: "_Point") -> "_Point":
+    def get_points_center(self, other_point: "Point") -> "Point":
         """
         获取两个坐标点的中间坐标
         :param other_point: 其他的坐标点
@@ -72,7 +72,7 @@ class _Point:
         return f"Point(x={self.x}, y={self.y})"
 
 
-_Point_Tuple = Union[_Point, Tuple[float, float]]
+_Point_Tuple = Union[Point, Tuple[float, float]]
 
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
@@ -126,7 +126,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             self.request.sendall(data)
             response = self.request.recv(65535)
             if response == b"":
-                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
+                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接")
             data_length, data = response.split(b"/", 1)
             while int(data_length) > len(data):
                 data += self.request.recv(65535)
@@ -153,7 +153,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             self.request.sendall(bytes_data)
             response = self.request.recv(65535)
             if response == b"":
-                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
+                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接")
             data_length, data = response.split(b"/", 1)
             while int(data_length) > len(data):
                 data += self.request.recv(65535)
@@ -177,7 +177,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             self.request.sendall(data)
             response = self.request.recv(65535)
             if response == b"":
-                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
+                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接")
             data_length, data = response.split(b"/", 1)
             while int(data_length) > len(data):
                 data += self.request.recv(65535)
@@ -194,9 +194,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :return:
 
         # 区域相关参数
-        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
         # 算法相关参数
-        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值
         threshold 和 max_val 同为 255 时灰度处理.
         0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
         1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
@@ -251,7 +251,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         return response
 
     def find_color(self, color: str, sub_colors: _SubColors = None, region: _Region = None, similarity: float = 0.9,
-                   wait_time: float = None, interval_time: float = None, raise_err: bool = None) -> Optional[_Point]:
+                   wait_time: float = None, interval_time: float = None, raise_err: bool = None) -> Optional[Point]:
         """
         获取指定色值的坐标点，返回坐标或者 None
         :param color: 颜色字符串，必须以 # 开头，例如：#008577；
@@ -264,9 +264,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :return:
 
         # 区域相关参数
-        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
         # 算法相关参数
-        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值
         threshold 和 max_val 同为 255 时灰度处理.
         0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
         1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
@@ -307,10 +307,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             else:
                 # 找色成功
                 x, y = response.split("|")
-                return _Point(x=float(x), y=float(y), driver=self)
+                return Point(x=float(x), y=float(y), driver=self)
         # 超时
         if raise_err:
-            raise TimeoutError("`find_color` 操作超时。")
+            raise TimeoutError("`find_color` 操作超时")
         return None
 
     # def compare_color(self):
@@ -321,7 +321,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     #   找图相关   #
     # #############
     def find_image(self, image_name, region: _Region = None, algorithm: _Algorithm = None, similarity: float = 0.9,
-                   wait_time: float = None, interval_time: float = None, raise_err: bool = None) -> Optional[_Point]:
+                   wait_time: float = None, interval_time: float = None, raise_err: bool = None) -> Optional[Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回图片坐标或者 None
         :param image_name: 图片名称（手机中）；
@@ -334,9 +334,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :return:
 
         # 区域相关参数
-        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
         # 算法相关参数
-        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值
         threshold 和 max_val 同为 255 时灰度处理.
         0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
         1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
@@ -353,7 +353,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
     def find_images(self, image_name, region: _Region = None, algorithm: _Algorithm = None, similarity: float = 0.9,
                     multi: int = 1, wait_time: float = None, interval_time: float = None,
-                    raise_err: bool = None) -> List[_Point]:
+                    raise_err: bool = None) -> List[Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回坐标列表
         :param image_name: 图片名称（手机中）；
@@ -367,9 +367,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :return:
 
         # 区域相关参数
-        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
         # 算法相关参数
-        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值。
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值
         threshold 和 max_val 同为 255 时灰度处理.
         0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
         1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
@@ -413,15 +413,15 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 point_list = []
                 for point_str in image_points:
                     x, y = point_str.split("|")
-                    point_list.append(_Point(x=float(x), y=float(y), driver=self))
+                    point_list.append(Point(x=float(x), y=float(y), driver=self))
                 return point_list
         # 超时
         if raise_err:
-            raise TimeoutError("`find_images` 操作超时。")
+            raise TimeoutError("`find_images` 操作超时")
         return []
 
     def find_dynamic_image(self, interval_ti: int, region: _Region = None, wait_time: float = None,
-                           interval_time: float = None, raise_err: bool = None) -> List[_Point]:
+                           interval_time: float = None, raise_err: bool = None) -> List[Point]:
         """
         找动态图，对比同一张图在不同时刻是否发生变化，返回坐标列表
         :param interval_ti: 前后时刻的间隔时间，单位毫秒；
@@ -432,7 +432,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :return:
 
         # 区域相关参数
-        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形。
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
         """
         if wait_time is None:
             wait_time = self.wait_timeout
@@ -459,11 +459,11 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 point_list = []
                 for point_str in image_points:
                     x, y = point_str.split("|")
-                    point_list.append(_Point(x=float(x), y=float(y), driver=self))
+                    point_list.append(Point(x=float(x), y=float(y), driver=self))
                 return point_list
         # 超时
         if raise_err:
-            raise TimeoutError("`find_dynamic_image` 操作超时。")
+            raise TimeoutError("`find_dynamic_image` 操作超时")
         return []
 
     # ################
@@ -598,7 +598,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             text_list.append(text)
         return text_list
 
-    def find_text(self, text: str, region: _Region = None, scale: float = 1.0) -> List[_Point]:
+    def find_text(self, text: str, region: _Region = None, scale: float = 1.0) -> List[Point]:
         """
         查找文字所在的坐标，返回坐标列表（坐标是文本区域中心位置）
         :param text: 要查找的文字；
@@ -645,13 +645,13 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
                 # 计算文本区域中心坐标
                 if region[2] != 0:  # 缩放
-                    text_point = _Point(
+                    text_point = Point(
                         x=float(region[0] + (start_x + offset_x) / scale),
                         y=float(region[1] + (start_y + offset_y) / scale),
                         driver=self
                     )
                 else:
-                    text_point = _Point(
+                    text_point = Point(
                         x=float(region[0] + (start_x + offset_x) * 2),
                         y=float(region[1] + (start_y + offset_y) * 2),
                         driver=self
@@ -664,7 +664,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     #   元素操作   #
     ###############
     def get_element_rect(self, xpath: str, wait_time: float = None, interval_time: float = None,
-                         raise_err: bool = None) -> Optional[Tuple[_Point, _Point]]:
+                         raise_err: bool = None) -> Optional[Tuple[Point, Point]]:
         """
         获取元素位置，返回元素区域左上角和右下角坐标
         :param xpath: xpath 路径
@@ -691,11 +691,11 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             # 成功
             else:
                 start_x, start_y, end_x, end_y = data.split("|")
-                return _Point(x=float(start_x), y=float(start_y), driver=self), _Point(x=float(end_x), y=float(end_y),
-                                                                                       driver=self)
+                return Point(x=float(start_x), y=float(start_y), driver=self), Point(x=float(end_x), y=float(end_y),
+                                                                                     driver=self)
         # 超时
         if raise_err:
-            raise TimeoutError("`get_element_rect` 操作超时。")
+            raise TimeoutError("`get_element_rect` 操作超时")
         return None
 
     def get_element_desc(self, xpath: str, wait_time: float = None, interval_time: float = None,
@@ -728,7 +728,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 return data
         # 超时
         if raise_err:
-            raise TimeoutError("`get_element_desc` 操作超时。")
+            raise TimeoutError("`get_element_desc` 操作超时")
         return None
 
     def get_element_text(self, xpath: str, wait_time: float = None, interval_time: float = None,
@@ -761,7 +761,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 return data
         # 超时
         if raise_err:
-            raise TimeoutError("`get_element_text` 操作超时。")
+            raise TimeoutError("`get_element_text` 操作超时")
         return None
 
     def set_element_text(self, xpath: str, text: str, wait_time: float = None, interval_time: float = None,
@@ -794,7 +794,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 return True
         # 超时
         if raise_err:
-            raise TimeoutError("`set_element_text` 操作超时。")
+            raise TimeoutError("`set_element_text` 操作超时")
         return False
 
     def click_element(self, xpath: str, wait_time: float = None, interval_time: float = None,
@@ -826,7 +826,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 return True
         # 超时
         if raise_err:
-            raise TimeoutError("`click_element` 操作超时。")
+            raise TimeoutError("`click_element` 操作超时")
         return False
 
     def click_any_elements(self, xpath_list: List[str], wait_time: float = None, interval_time: float = None,
@@ -857,7 +857,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             time.sleep(interval_time)
 
         if raise_err:
-            raise TimeoutError("`click_any_elements` 操作超时。")
+            raise TimeoutError("`click_any_elements` 操作超时")
         return False
 
     def scroll_element(self, xpath: str, direction: int = 0) -> bool:
@@ -898,7 +898,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 return True
         # 超时
         if raise_err:
-            raise TimeoutError("`element_not_exists` 操作超时。")
+            raise TimeoutError("`element_not_exists` 操作超时")
         return False
 
     def element_exists(self, xpath: str, wait_time: float = None, interval_time: float = None,
@@ -930,7 +930,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 return True
         # 超时
         if raise_err:
-            raise TimeoutError("`element_exists` 操作超时。")
+            raise TimeoutError("`element_exists` 操作超时")
         return False
 
     def any_elements_exists(self, xpath_list: List[str], wait_time: float = None, interval_time: float = None,
@@ -961,7 +961,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             time.sleep(interval_time)
 
         if raise_err:
-            raise TimeoutError("`any_elements_exists` 操作超时。")
+            raise TimeoutError("`any_elements_exists` 操作超时")
         return None
 
     def element_is_selected(self, xpath: str) -> bool:
@@ -1014,7 +1014,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             time.sleep(interval_time)
 
         if raise_err:
-            raise TimeoutError("`click_element_by_slide` 操作超时。")
+            raise TimeoutError("`click_element_by_slide` 操作超时")
         return False
 
     # #############
