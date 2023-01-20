@@ -547,6 +547,20 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """手指抬起"""
         return self.__send_data("release") == "true"
 
+    def press_release(self, point: _Point_Tuple, duration: float) -> bool:
+        """
+        按下屏幕并释放
+        :return:
+        """
+        result = self.press(point, duration)
+        if not result:
+            return False
+        time.sleep(duration)
+        result2 = self.release()
+        if not result2:
+            return False
+        return True
+
     # ##############
     #   OCR 相关   #
     ################

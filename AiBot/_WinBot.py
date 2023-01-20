@@ -11,7 +11,7 @@ from typing import Optional, List, Tuple
 
 from loguru import logger
 
-from ._utils import _protect, _Point, _Region, _Algorithm, _SubColors
+from ._utils import _protect, Point, _Region, _Algorithm, _SubColors
 
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
@@ -345,13 +345,13 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             else:
                 # 找色成功
                 x, y = response.split("|")
-                return _Point(x=float(x), y=float(y))
+                return Point(x=float(x), y=float(y))
         # 超时
         return None
 
     def find_images(self, hwnd: str, image_path: str, region: _Region = None, algorithm: _Algorithm = None,
                     similarity: float = 0.9, mode: bool = False, multi: int = 1, wait_time: float = None,
-                    interval_time: float = None) -> List[_Point]:
+                    interval_time: float = None) -> List[Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回坐标列表
         :param hwnd: 窗口句柄；
@@ -410,13 +410,13 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 point_list = []
                 for point_str in image_points:
                     x, y = point_str.split("|")
-                    point_list.append(_Point(x=float(x), y=float(y)))
+                    point_list.append(Point(x=float(x), y=float(y)))
                 return point_list
         # 超时
         return []
 
     def find_dynamic_image(self, hwnd: str, interval_ti: int, region: _Region = None, mode: bool = False,
-                           wait_time: float = None, interval_time: float = None) -> List[_Point]:
+                           wait_time: float = None, interval_time: float = None) -> List[Point]:
         """
         找动态图，对比同一张图在不同时刻是否发生变化，返回坐标列表
         :param hwnd: 窗口句柄；
@@ -450,7 +450,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 point_list = []
                 for point_str in image_points:
                     x, y = point_str.split("|")
-                    point_list.append(_Point(x=float(x), y=float(y)))
+                    point_list.append(Point(x=float(x), y=float(y)))
                 return point_list
         # 超时
         return []
@@ -528,7 +528,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             text_list.append(text)
         return text_list
 
-    def find_text(self, hwnd_or_image_path: str, text: str, region: _Region = None, mode: bool = False) -> List[_Point]:
+    def find_text(self, hwnd_or_image_path: str, text: str, region: _Region = None, mode: bool = False) -> List[Point]:
         """
         通过 OCR 识别窗口/图片中的文字，返回文字列表
         :param hwnd_or_image_path: 句柄或者图片路径；
@@ -575,7 +575,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 offset_y = height / 2
 
                 # 计算文本区域中心坐标
-                text_point = _Point(
+                text_point = Point(
                     x=float(region[0] + start_x + offset_x),
                     y=float(region[1] + start_y + offset_y),
                 )
@@ -642,7 +642,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         return None
 
     def get_element_rect(self, hwnd: str, xpath: str, wait_time: float = None, interval_time: float = None) \
-            -> Optional[Tuple[_Point, _Point]]:
+            -> Optional[Tuple[Point, Point]]:
         """
         获取元素矩形，返回左上和右下坐标
         :param hwnd: 窗口句柄
@@ -665,7 +665,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 continue
             else:
                 x1, y1, x2, y2 = response.split("|")
-                return _Point(x=float(x1), y=float(y1)), _Point(x=float(x2), y=float(y2))
+                return Point(x=float(x1), y=float(y1)), Point(x=float(x2), y=float(y2))
         # 超时
         return None
 
