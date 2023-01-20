@@ -6,7 +6,6 @@ import sys
 import threading
 import time
 import re
-import logging
 from ast import literal_eval
 from typing import Optional, Dict, List, Tuple, Union
 
@@ -102,7 +101,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         self.log = logger
 
         self.log.remove()
-        self.log.add(logging.StreamHandler(sys.stdout), level=self.log_level.upper(), format=self.log_format)
+        self.log.add(sys.stdout, level=self.log_level.upper(), format=self.log_format)
 
         if self.log_path:
             self.log.add(self.log_path, level=self.log_level.upper(), format=self.log_format,
