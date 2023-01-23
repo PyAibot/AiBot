@@ -931,7 +931,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         return False
 
     def any_elements_exists(self, xpath_list: List[str], wait_time: float = None, interval_time: float = None) -> \
-    Optional[str]:
+            Optional[str]:
         """
         遍历列表中的元素，只要任意一个元素存在就返回 True
         :param xpath_list: xpath 列表
@@ -948,7 +948,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         end_time = time.time() + wait_time
         while time.time() < end_time:
             for xpath in xpath_list:
-                result = self.element_exists(xpath, wait_time=0.05, interval_time=0.01, raise_err=False)
+                result = self.element_exists(xpath, wait_time=0.05, interval_time=0.01)
                 if result:
                     return xpath
             time.sleep(interval_time)
