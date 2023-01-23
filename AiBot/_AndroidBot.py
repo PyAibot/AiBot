@@ -882,14 +882,12 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("scrollElement", xpath, direction) == "true"
 
-    def element_not_exists(self, xpath: str, wait_time: float = None, interval_time: float = None,
-                           raise_err: bool = None) -> bool:
+    def element_not_exists(self, xpath: str, wait_time: float = None, interval_time: float = None) -> bool:
         """
         元素是否不存在
         :param xpath: xpath 路径
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
-        :param raise_err: 超时是否抛出异常；
         :return:
         """
         if wait_time is None:
@@ -897,9 +895,6 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
-
-        if raise_err is None:
-            raise_err = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -909,19 +904,14 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             # 不存在
             else:
                 return True
-        # 超时
-        if raise_err:
-            raise TimeoutError("`element_not_exists` 操作超时")
         return False
 
-    def element_exists(self, xpath: str, wait_time: float = None, interval_time: float = None,
-                       raise_err: bool = None) -> bool:
+    def element_exists(self, xpath: str, wait_time: float = None, interval_time: float = None) -> bool:
         """
         元素是否存在
         :param xpath: xpath 路径
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
-        :param raise_err: 超时是否抛出异常；
         :return:
         """
         if wait_time is None:
@@ -929,9 +919,6 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if interval_time is None:
             interval_time = self.interval_timeout
-
-        if raise_err is None:
-            raise_err = self.raise_err
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
@@ -941,19 +928,15 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             # 成功
             else:
                 return True
-        # 超时
-        if raise_err:
-            raise TimeoutError("`element_exists` 操作超时")
         return False
 
-    def any_elements_exists(self, xpath_list: List[str], wait_time: float = None, interval_time: float = None,
-                            raise_err: bool = None) -> Optional[str]:
+    def any_elements_exists(self, xpath_list: List[str], wait_time: float = None, interval_time: float = None) -> \
+    Optional[str]:
         """
         遍历列表中的元素，只要任意一个元素存在就返回 True
         :param xpath_list: xpath 列表
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
-        :param raise_err: 超时是否抛出异常；
         :return:
         """
         if wait_time is None:
@@ -962,9 +945,6 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         if interval_time is None:
             interval_time = self.interval_timeout
 
-        if raise_err is None:
-            raise_err = self.raise_err
-
         end_time = time.time() + wait_time
         while time.time() < end_time:
             for xpath in xpath_list:
@@ -972,9 +952,6 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 if result:
                     return xpath
             time.sleep(interval_time)
-
-        if raise_err:
-            raise TimeoutError("`any_elements_exists` 操作超时")
         return None
 
     def element_is_selected(self, xpath: str) -> bool:
