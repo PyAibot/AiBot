@@ -59,8 +59,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
             argv = str(argv)
             args_text += argv
-            args_len += str(len(argv)) + "/"
-            # args_len += str(len(bytes(argv, 'utf8'))) + "/"
+            args_len += str(len(bytes(argv, 'utf8'))) + "/"
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
