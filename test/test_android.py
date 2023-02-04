@@ -21,6 +21,26 @@ class CustomAndroidScript(AndroidBotMain):
         xpath = "com.aibot.client/android.widget.EditText@text=192.168.68.195"
         points = self.get_element_rect(xpath)
         result = self.press(points[0].get_points_center(points[1]), 3)
+
+        # 找图，返回坐标
+        point = self.find_image("")
+        # 点击坐标
+        point.click()
+        # 点击坐标
+        self.click(point)
+
+        # 获取矩形位置，返回坐标组
+        points = self.get_element_rect("")
+        # 获取矩形中心点
+        center_point = points[0].get_points_center(points[1])
+        # 点击坐标
+        center_point.click()
+        # 点击坐标
+        self.click(center_point)
+
+        # 点击坐标
+        self.click((111, 222))
+
         print(result)
         time.sleep(3)
 

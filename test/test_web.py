@@ -19,4 +19,11 @@ class CustomWebScript(WebBotMain):
 
 if __name__ == '__main__':
     # 监听 6666 号端口
-    CustomWebScript.execute(9999)
+    driver_params = {
+        "browserName": "chrome",
+        "debugPort": 15120,  # 要接管的浏览器端口号
+        "userDataDir": "./UserData",
+        "browserPath": None,
+        "argument": None,
+    }
+    CustomWebScript.execute(9999, driver_params=driver_params)
