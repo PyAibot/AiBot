@@ -457,6 +457,10 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             "status": resp.get("windowState")
         }
 
+    def mobile_emulation(self):
+        """模拟移动端浏览器"""
+        raise NotImplementedError()
+
     ###############
     #   Cookies   #
     ###############
