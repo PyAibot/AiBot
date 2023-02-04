@@ -1137,13 +1137,32 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("sendVk", vk) == "true"
 
-    # def write_android_file(self):
-    #     """TODO"""
-    #     raise NotImplementedError()
-    #
-    # def read_android_file(self):
-    #     """TODO"""
-    #     raise NotImplementedError()
+    def write_android_file(self, remote_path: str, text: str, append: bool) -> bool:
+        """
+        写入安卓文件
+        :param remote_path: 安卓文件路径
+        :param text: 要写入的文本内容
+        :param append: 是否追加模式
+        :return:
+        """
+        if not remote_path.endswith(".txt"):
+            raise TypeError("文件必须是.txt后缀结尾")
+
+        if not remote_path.startswith("/storage/emulated/0/"):
+            remote_path = "/storage/emulated/0/" + remote_path
+
+        return self.__send_data("writeAndroidFile", remote_path, text, append) == "true"
+
+    def read_android_file(self, remote_path: str) -> Optional[str]:
+        """
+        读取安卓文件
+        :param remote_path: 安卓文件路径
+        :return:
+        """
+        response = self.__send_data("readAndroidFile", remote_path)
+        if response == "null":
+            return None
+        return response
 
     def back(self) -> bool:
         """
