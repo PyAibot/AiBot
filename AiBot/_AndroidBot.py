@@ -105,7 +105,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if self.log_path:
             self.log.add(self.log_path, level=self.log_level.upper(), format=self.log_format,
-                         rotation='100 MB', retention='2 days')
+                         rotation='5 MB', retention='2 days')
 
         super().__init__(request, client_address, server)
 
