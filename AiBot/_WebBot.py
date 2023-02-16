@@ -6,7 +6,7 @@ import socketserver
 import subprocess
 import sys
 import threading
-from typing import Optional, Tuple, Any
+from typing import Optional, Tuple, Any, Literal
 
 from loguru import logger
 
@@ -457,9 +457,25 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             "status": resp.get("windowState")
         }
 
-    def mobile_emulation(self):
-        """模拟移动端浏览器"""
-        raise NotImplementedError()
+    def mobile_emulation(self, width: int, height: int, UA: str, sys: Literal["Android", "iOS"], sys_version: str,
+                         lang: str = "", tz: str = "", latitude: float = 0, longitude: float = 0,
+                         accuracy: float = 0) -> bool:
+        """
+        模拟移动端浏览器
+        :param width: 宽度
+        :param height: 高度
+        :param UA: 用户代理
+        :param sys: 系统
+        :param sys_version: 系统版本
+        :param lang: 语言
+        :param tz: 时区
+        :param latitude: 纬度
+        :param longitude: 经度
+        :param accuracy: 准确度
+        :return:
+        """
+        return self.__send_data("mobileEmulation", width, height, UA, sys, sys_version, lang, tz, latitude, longitude,
+                                accuracy) == "true"
 
     ###############
     #   Cookies   #
