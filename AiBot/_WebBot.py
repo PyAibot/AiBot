@@ -571,6 +571,16 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             return None
         return response
 
+    #################
+    #   浏览器操作   #
+    #################
+    def quit(self) -> bool:
+        """
+        退出浏览器
+        :return:
+        """
+        return self.__send_data("closeBrowser") == "true"
+
     ############
     #   其他   #
     ############
