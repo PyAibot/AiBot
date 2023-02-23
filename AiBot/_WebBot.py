@@ -457,6 +457,18 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             "status": resp.get("windowState")
         }
 
+    def set_window_pos(self, a, b, c, d, e) -> bool:
+        """
+        设置窗口位置和状态；
+        :param a:
+        :param b:
+        :param c:
+        :param d:
+        :param e:
+        :return:
+        """
+        return self.__send_data("setWindowPos", a, b, c, d, e) == "true"
+
     def mobile_emulation(self, width: int, height: int, UA: str, sys: Literal["Android", "iOS"], sys_version: str,
                          lang: str = "", tz: str = "", latitude: float = 0, longitude: float = 0,
                          accuracy: float = 0) -> bool:
