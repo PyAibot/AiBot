@@ -1159,10 +1159,35 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param remote_path: 安卓文件路径
         :return:
         """
+        if not remote_path.startswith("/storage/emulated/0/"):
+            remote_path = "/storage/emulated/0/" + remote_path
+
         response = self.__send_data("readAndroidFile", remote_path)
         if response == "null":
             return None
         return response
+
+    def delete_android_file(self, remote_path: str) -> bool:
+        """
+        删除安卓文件
+        :param remote_path: 安卓文件路径
+        :return:
+        """
+        if not remote_path.startswith("/storage/emulated/0/"):
+            remote_path = "/storage/emulated/0/" + remote_path
+
+        return self.__send_data("deleteAndroidFile", remote_path) == "true"
+
+    def exists_android_file(self, remote_path: str) -> bool:
+        """
+        安卓文件是否存在
+        :param remote_path: 安卓文件路径
+        :return:
+        """
+        if not remote_path.startswith("/storage/emulated/0/"):
+            remote_path = "/storage/emulated/0/" + remote_path
+
+        return self.__send_data("existsAndroidFile", remote_path) == "true"
 
     def back(self) -> bool:
         """
