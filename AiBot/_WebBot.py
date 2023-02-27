@@ -469,15 +469,15 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("setWindowPos", status, left, top, width, height) == "true"
 
-    def mobile_emulation(self, width: int, height: int, UA: str, sys: Literal["Android", "iOS"], sys_version: str,
+    def mobile_emulation(self, width: int, height: int, ua: str, _sys: Literal["Android", "iOS"], sys_version: str,
                          lang: str = "", tz: str = "", latitude: float = 0, longitude: float = 0,
                          accuracy: float = 0) -> bool:
         """
         模拟移动端浏览器
         :param width: 宽度
         :param height: 高度
-        :param UA: 用户代理
-        :param sys: 系统
+        :param ua: 用户代理
+        :param _sys: 系统
         :param sys_version: 系统版本
         :param lang: 语言
         :param tz: 时区
@@ -486,7 +486,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         :param accuracy: 准确度
         :return:
         """
-        return self.__send_data("mobileEmulation", width, height, UA, sys, sys_version, lang, tz, latitude, longitude,
+        return self.__send_data("mobileEmulation", width, height, ua, _sys, sys_version, lang, tz, latitude, longitude,
                                 accuracy) == "true"
 
     ###############
