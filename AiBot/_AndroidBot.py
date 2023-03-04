@@ -582,51 +582,61 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         return text_info_list
 
-    def __ocr_server(self, region: _Region = None, scale: float = 1.0) -> list:
+    def __ocr_server(self, region: _Region = None, algorithm: _Algorithm = None, scale: float = 1.0) -> list:
         """
         OCR 服务，通过 OCR 识别屏幕中文字
         :param region:
+        :param algorithm:
         :param scale:
         :return:
         """
         if not region:
             region = [0, 0, 0, 0]
 
+        if not algorithm:
+            algorithm_type, threshold, max_val = [0, 0, 0]
+        else:
+            algorithm_type, threshold, max_val = algorithm
+            if algorithm_type in (5, 6):
+                threshold = 127
+                max_val = 255
+
+        # TODO algorithm 相关参数如何传？
         response = self.__send_data("ocr", *region, scale)
         if response == "null" or response == "":
             return []
         return self.__parse_ocr(response)
 
-    def get_text(self, region: _Region = None, scale: float = 1.0) -> List[str]:
+    def get_text(self, region: _Region = None, algorithm: _Algorithm = None, scale: float = 1.0) -> List[str]:
         """
         通过 OCR 识别屏幕中的文字，返回文字列表
         :param region: 识别区域，默认全屏；
+        :param algorithm: 处理图片/屏幕所用算法和参数，默认保存原图；
         :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
         :return:
         """
-        text_info_list = self.__ocr_server(region, scale)
+        text_info_list = self.__ocr_server(region, algorithm, scale)
         text_list = []
         for text_info in text_info_list:
             text = text_info[-1][0]
             text_list.append(text)
         return text_list
 
-    def find_text(self, text: str, region: _Region = None, scale: float = 1.0) -> List[Point]:
+    def find_text(self, text: str, region: _Region = None, algorithm: _Algorithm = None, scale: float = 1.0) -> \
+            List[Point]:
         """
         查找文字所在的坐标，返回坐标列表（坐标是文本区域中心位置）
         :param text: 要查找的文字；
         :param region: 识别区域，默认全屏；
+        :param algorithm: 处理图片/屏幕所用算法和参数，默认保存原图；
         :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
         :return:
         """
-        if not region:
-            region = [0, 0, 0, 0]
-
         # scale 仅支持区域识别
         if region[2] == 0:
             scale = 1.0
 
-        text_info_list = self.__ocr_server(region, scale)
+        text_info_list = self.__ocr_server(region, algorithm, scale)
 
         text_points = []
         for text_info in text_info_list:

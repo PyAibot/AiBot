@@ -476,51 +476,86 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
         return text_info_list
 
-    def __ocr_server(self, hwnd: str, region: _Region = None, mode: bool = False) -> list:
+    def __ocr_server(self, hwnd: str, region: _Region = None, algorithm: _Algorithm = None, mode: bool = False) -> list:
         """
         OCR 服务，通过 OCR 识别屏幕中文字
         :param hwnd:
         :param region:
+        :param algorithm:
         :param mode:
         :return:
         """
         if not region:
             region = [0, 0, 0, 0]
 
+        if not algorithm:
+            algorithm_type, threshold, max_val = [0, 0, 0]
+        else:
+            algorithm_type, threshold, max_val = algorithm
+            if algorithm_type in (5, 6):
+                threshold = 127
+                max_val = 255
+
+        # TODO
         response = self.__send_data("ocr", hwnd, *region, mode)
         if response == "null" or response == "":
             return []
         return self.__parse_ocr(response)
 
-    def __ocr_server_by_file(self, image_path: str, region: _Region = None) -> list:
+    def __ocr_server_by_file(self, image_path: str, region: _Region = None, algorithm: _Algorithm = None) -> list:
         """
         OCR 服务，通过 OCR 识别屏幕中文字
         :param image_path:
         :param region:
+        :param algorithm:
         :return:
         """
         if not region:
             region = [0, 0, 0, 0]
 
+        if not algorithm:
+            algorithm_type, threshold, max_val = [0, 0, 0]
+        else:
+            algorithm_type, threshold, max_val = algorithm
+            if algorithm_type in (5, 6):
+                threshold = 127
+                max_val = 255
+
+        # TODO
         response = self.__send_data("ocrByFile", image_path, *region)
         if response == "null" or response == "":
             return []
         return self.__parse_ocr(response)
 
-    def get_text(self, hwnd_or_image_path: str, region: _Region = None, mode: bool = False) -> List[str]:
+    def get_text(self, hwnd_or_image_path: str, region: _Region = None, algorithm: _Algorithm = None,
+                 mode: bool = False) -> List[str]:
         """
         通过 OCR 识别窗口/图片中的文字，返回文字列表
         :param hwnd_or_image_path: 窗口句柄或者图片路径；
         :param region: 识别区域，默认全屏；
+        :param algorithm: 处理图片/屏幕所用算法和参数，默认保存原图；
         :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
         :return:
+
+        # 区域相关参数
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
+        # 算法相关参数
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值
+        threshold 和 max_val 同为 255 时灰度处理.
+        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
+        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
+        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
+        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
+        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
+        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
+        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
         if hwnd_or_image_path.isdigit():
             # 句柄
-            text_info_list = self.__ocr_server(hwnd_or_image_path, region, mode)
+            text_info_list = self.__ocr_server(hwnd_or_image_path, region, algorithm, mode)
         else:
             # 图片
-            text_info_list = self.__ocr_server_by_file(hwnd_or_image_path, region)
+            text_info_list = self.__ocr_server_by_file(hwnd_or_image_path, region, algorithm)
 
         text_list = []
         for text_info in text_info_list:
@@ -528,24 +563,36 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             text_list.append(text)
         return text_list
 
-    def find_text(self, hwnd_or_image_path: str, text: str, region: _Region = None, mode: bool = False) -> List[Point]:
+    def find_text(self, hwnd_or_image_path: str, text: str, region: _Region = None, algorithm: _Algorithm = None,
+                  mode: bool = False) -> List[Point]:
         """
         通过 OCR 识别窗口/图片中的文字，返回文字列表
         :param hwnd_or_image_path: 句柄或者图片路径；
         :param text: 要查找的文字；
         :param region: 识别区域，默认全屏；
+        :param algorithm: 处理图片/屏幕所用算法和参数，默认保存原图；
         :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
         :return:
-        """
-        if not region:
-            region = [0, 0, 0, 0]
 
+        # 区域相关参数
+        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
+        # 算法相关参数
+        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值
+        threshold 和 max_val 同为 255 时灰度处理.
+        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
+        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
+        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
+        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
+        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
+        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
+        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
+        """
         if hwnd_or_image_path.isdigit():
             # 句柄
-            text_info_list = self.__ocr_server(hwnd_or_image_path, region, mode)
+            text_info_list = self.__ocr_server(hwnd_or_image_path, region, algorithm, mode)
         else:
             # 图片
-            text_info_list = self.__ocr_server_by_file(hwnd_or_image_path, region)
+            text_info_list = self.__ocr_server_by_file(hwnd_or_image_path, region, algorithm)
 
         text_points = []
         for text_info in text_info_list:
