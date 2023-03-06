@@ -496,8 +496,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 threshold = 127
                 max_val = 255
 
-        # TODO
-        response = self.__send_data("ocr", hwnd, *region, mode)
+        response = self.__send_data("ocr", hwnd, *region, algorithm_type, threshold, max_val, mode)
         if response == "null" or response == "":
             return []
         return self.__parse_ocr(response)
@@ -521,8 +520,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 threshold = 127
                 max_val = 255
 
-        # TODO
-        response = self.__send_data("ocrByFile", image_path, *region)
+        response = self.__send_data("ocrByFile", image_path, *region, algorithm_type, threshold, max_val)
         if response == "null" or response == "":
             return []
         return self.__parse_ocr(response)

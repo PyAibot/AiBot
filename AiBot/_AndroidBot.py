@@ -601,8 +601,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 threshold = 127
                 max_val = 255
 
-        # TODO algorithm 相关参数如何传？
-        response = self.__send_data("ocr", *region, scale)
+        response = self.__send_data("ocr", *region, algorithm_type, threshold, max_val, scale)
         if response == "null" or response == "":
             return []
         return self.__parse_ocr(response)
