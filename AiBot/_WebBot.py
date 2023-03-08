@@ -699,11 +699,13 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             try:
                 print("尝试本地启动 WebDriver ...")
                 subprocess.Popen(["WebDriver.exe", default_params])
+                print("本地启动 WebDriver 成功，开始执行脚本")
             except FileNotFoundError as e:
                 err_msg = "\n异常排除步骤：\n1. 检查 Aibote.exe 路径是否存在中文；\n2. 是否启动 Aibote.exe 初始化环境变量；\n3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；\n4. 首次初始化环境变量后，是否重启开发工具；\n5. 是否以管理员权限启动开发工具；\n"
                 print("\033[92m", err_msg, "\033[0m")
                 raise e
-
+        else:
+            print("等待驱动连接...")
         # 启动 Socket 服务
         sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
         sock.serve_forever()
