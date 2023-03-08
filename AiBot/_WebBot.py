@@ -82,7 +82,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def goto(self, url: str) -> bool:
         """
         跳转页面
-        :param url:
+
+        :param url: url 地址
         :return:
         """
         return self.__send_data("goto", url) == "true"
@@ -90,7 +91,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def new_page(self, url: str) -> bool:
         """
         新建 Tab 并跳转页面
-        :param url:
+
+        :param url: url 地址
         :return:
         """
         return self.__send_data("newPage", url) == "true"
@@ -98,6 +100,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def back(self) -> bool:
         """
         后退
+
         :return:
         """
         return self.__send_data("back") == "true"
@@ -105,6 +108,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def forward(self) -> bool:
         """
         前进
+
         :return:
         """
         return self.__send_data("forward") == "true"
@@ -112,6 +116,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def refresh(self) -> bool:
         """
         刷新
+
         :return:
         """
         return self.__send_data("refresh") == "true"
@@ -119,8 +124,9 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def save_screenshot(self, xpath: str = None) -> Optional[str]:
         """
         截图，返回 PNG 格式的 base64
+
         :param xpath: 元素路径，如果指定该参数则截取元素图片；
-        :return:
+        :return: PNG 格式的 base64 的字符串或 None
         """
         if xpath is None:
             response = self.__send_data("takeScreenshot")
@@ -133,6 +139,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def get_current_page_id(self) -> Optional[str]:
         """
         获取当前页面 ID
+
         :return:
         """
         response = self.__send_data("getCurPageId")
@@ -143,6 +150,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def get_all_page_id(self) -> list:
         """
         获取所有页面 ID
+
         :return:
         """
         response = self.__send_data("getAllPageId")
@@ -153,7 +161,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def switch_to_page(self, page_id: str) -> bool:
         """
         切换到指定页面
-        :param page_id:
+
+        :param page_id: page id
         :return:
         """
         return self.__send_data("switchPage", page_id) == "true"
@@ -161,6 +170,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def close_current_page(self) -> bool:
         """
         关闭当前页面
+
         :return:
         """
         return self.__send_data("closePage") == "true"
@@ -168,7 +178,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def get_current_url(self) -> Optional[str]:
         """
         获取当前页面 URL
-        :return:
+
+        :return: 当前页面 URL 字符串或 None
         """
         response = self.__send_data("getCurrentUrl")
         if response == "webdriver error":
@@ -192,7 +203,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def switch_to_frame(self, xpath) -> bool:
         """
         切换到指定 frame
-        :param xpath:
+
+        :param xpath: xpath 路径
         :return:
         """
         return self.__send_data("switchFrame", xpath) == "true"
@@ -200,6 +212,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def switch_to_main_frame(self) -> bool:
         """
         切回主 frame
+
         :return:
         """
         return self.__send_data("switchMainFrame") == "true"
@@ -210,7 +223,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def click_element(self, xpath: str) -> bool:
         """
         点击元素
-        :param xpath:
+
+        :param xpath: xpath 路径
         :return:
         """
         return self.__send_data("clickElement", xpath) == "true"
@@ -218,8 +232,9 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def get_element_text(self, xpath: str) -> Optional[str]:
         """
         获取元素文本
-        :param xpath:
-        :return:
+
+        :param xpath: xpath 路径
+        :return: 元素文本字符串或 None
         """
         response = self.__send_data("getElementText", xpath)
         if response == "null":
@@ -229,8 +244,9 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def get_element_rect(self, xpath: str) -> Optional[Tuple[Point, Point]]:
         """
         获取元素矩形坐标
-        :param xpath:
-        :return:
+
+        :param xpath: xpath 路径
+        :return: 元素矩形坐标或None
         """
         response = self.__send_data("getElementRect", xpath)
         if response == "null":
@@ -242,8 +258,9 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def get_element_attr(self, xpath: str, attr_name: str) -> Optional[str]:
         """
         获取元素的属性
-        :param xpath:
-        :param attr_name:
+
+        :param xpath: xpath 路径
+        :param attr_name: 属性名称字符串
         :return:
         """
         response = self.__send_data("getElementAttribute", xpath, attr_name)
@@ -254,7 +271,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def get_element_outer_html(self, xpath: str) -> Optional[str]:
         """
         获取元素的 outerHtml
-        :param xpath:
+
+        :param xpath: xpath 路径
         :return:
         """
         response = self.__send_data("getElementOuterHTML", xpath)
@@ -265,7 +283,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def get_element_inner_html(self, xpath: str) -> Optional[str]:
         """
         获取元素的 innerHtml
-        :param xpath:
+
+        :param xpath: xpath 路径
         :return:
         """
         response = self.__send_data("getElementInnerHTML", xpath)
@@ -276,7 +295,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def is_selected(self, xpath: str) -> bool:
         """
         元素是否已选中
-        :param xpath:
+
+        :param xpath: xpath 路径
         :return:
         """
         return self.__send_data("isSelected", xpath) == "true"
@@ -284,7 +304,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def is_displayed(self, xpath: str) -> bool:
         """
         元素是否可见
-        :param xpath:
+
+        :param xpath: xpath 路径
         :return:
         """
         return self.__send_data("isDisplayed", xpath) == "true"
@@ -292,7 +313,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def is_available(self, xpath: str) -> bool:
         """
         元素是否可用
-        :param xpath:
+
+        :param xpath: xpath 路径
         :return:
         """
         return self.__send_data("isEnabled", xpath) == "true"
@@ -300,7 +322,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def clear_element(self, xpath: str) -> bool:
         """
         清除元素值
-        :param xpath:
+
+        :param xpath: xpath 路径
         :return:
         """
         return self.__send_data("clearElement", xpath) == "true"
@@ -308,7 +331,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def set_element_focus(self, xpath: str) -> bool:
         """
         设置元素焦点
-        :param xpath:
+
+        :param xpath: xpath 路径
         :return:
         """
         return self.__send_data("setElementFocus", xpath) == "true"
@@ -316,8 +340,9 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def upload_file_by_element(self, xpath: str, file_path: str) -> bool:
         """
         通过元素上传文件
-        :param xpath:
-        :param file_path:
+
+        :param xpath:  元素 xpath 路径
+        :param file_path: 文件路径
         :return:
         """
         return self.__send_data("uploadFile", xpath, file_path) == "true"
@@ -325,8 +350,9 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def send_keys(self, xpath: str, value: str) -> bool:
         """
         输入值；如果元素不能设置焦点，应先 click_mouse 点击元素获得焦点后再输入
-        :param xpath:
-        :param value:
+
+        :param xpath: 元素 xpath 路径
+        :param value: 输入的内容
         :return:
         """
         return self.__send_data("sendKeys", xpath, value) == "true"
@@ -334,8 +360,9 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def set_element_value(self, xpath: str, value: str) -> bool:
         """
         设置元素值
-        :param xpath:
-        :param value:
+
+        :param xpath: 元素 xpath 路径
+        :param value: 设置的内容
         :return:
         """
         return self.__send_data("setElementValue", xpath, value) == "true"
@@ -343,9 +370,10 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def set_element_attr(self, xpath: str, attr_name: str, attr_value: str) -> bool:
         """
         设置元素属性
-        :param xpath:
-        :param attr_name:
-        :param attr_value:
+
+        :param xpath: 元素 xpath 路径
+        :param attr_name: 属性名称
+        :param attr_value: 属性值
         :return:
         """
         return self.__send_data("setElementAttribute", xpath, attr_name, attr_value) == "true"
@@ -353,7 +381,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def send_vk(self, vk: str) -> bool:
         """
         输入值
-        :param vk:
+
+        :param vk: 输入内容
         :return:
         """
         return self.__send_data("sendKeys", vk) == "true"
@@ -364,6 +393,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def click_mouse(self, point: _Point_Tuple, typ: int) -> bool:
         """
         点击鼠标
+
         :param point: 坐标点
         :param typ: 点击类型，单击左键:1 单击右键:2 按下左键:3 弹起左键:4 按下右键:5 弹起右键:6 双击左键:7
         :return:
@@ -373,6 +403,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def move_mouse(self, point: _Point_Tuple) -> bool:
         """
         移动鼠标
+
         :param point: 坐标点
         :return:
         """
@@ -381,6 +412,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def scroll_mouse(self, offset_x: float, offset_y: float, x: float = 0, y: float = 0) -> bool:
         """
         滚动鼠标
+
         :param offset_x: 水平滚动条移动的距离
         :param offset_y: 垂直滚动条移动的距离
         :param x: 鼠标横坐标位置， 默认为0
@@ -392,7 +424,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def click_mouse_by_element(self, xpath: str, typ: int) -> bool:
         """
         根据元素位置点击鼠标(元素中心点)
-        :param xpath:
+
+        :param xpath: 元素 xpath 路径
         :param typ: 点击类型，单击左键:1 单击右键:2 按下左键:3 弹起左键:4 按下右键:5 弹起右键:6 双击左键:7
         :return:
         """
@@ -401,7 +434,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def move_to_element(self, xpath: str) -> bool:
         """
         移动鼠标到元素位置(元素中心点)
-        :param xpath:
+
+        :param xpath: 元素 xpath 路径
         :return:
         """
         return self.__send_data("moveMouseByXpath", xpath) == "true"
@@ -409,6 +443,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def scroll_mouse_by_element(self, xpath: str, offset_x: float, offset_y: float) -> bool:
         """
         根据元素位置滚动鼠标
+
         :param xpath: 元素路径
         :param offset_x: 水平滚动条移动的距离
         :param offset_y: 垂直滚动条移动的距离
@@ -422,6 +457,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def click_alert(self, accept: bool, prompt_text: str = "") -> bool:
         """
         点击警告框
+
         :param accept: 确认或取消
         :param prompt_text: 可选参数，输入的警告框文本
         :return:
@@ -431,7 +467,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def get_alert_text(self) -> Optional[str]:
         """
         获取警告框文本
-        :return:
+
+        :return: 警告框文本字符串
         """
         response = self.__send_data("getAlertText")
         if response == "null":
@@ -443,9 +480,9 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     ###############
     def get_window_pos(self) -> Optional[dict]:
         """
-        获取窗口位置和状态；
-        返回窗口左上角坐标点，宽度和高度，状态
-        :return:
+        获取窗口位置和状态
+
+        :return: 返回窗口左上角坐标点，宽度和高度，状态
         """
         response = self.__send_data("getWindowPos")
         if response == "null":
@@ -459,12 +496,13 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
     def set_window_pos(self, left: float, top: float, width: float, height: float, status) -> bool:
         """
-        设置窗口位置和状态；
+        设置窗口位置和状态
+
         :param left: 窗口 x 坐标
         :param top: 窗口 y 坐标
         :param width: 宽度
         :param height: 高度
-        :param status:
+        :param status: 状态
         :return:
         """
         return self.__send_data("setWindowPos", status, left, top, width, height) == "true"
@@ -474,6 +512,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                          accuracy: float = 0) -> bool:
         """
         模拟移动端浏览器
+
         :param width: 宽度
         :param height: 高度
         :param ua: 用户代理
@@ -496,7 +535,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def get_cookies(self, url: str) -> Optional[list]:
         """
         获取指定 url 的 Cookies
-        :param url:
+
+        :param url: url 字符串
         :return:
         """
         response = self.__send_data("getCookies", url)
@@ -507,7 +547,8 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def get_all_cookies(self) -> Optional[list]:
         """
         获取所有的 Cookies
-        :return:
+
+        :return: 列表格式的 cookies
         """
         response = self.__send_data("getAllCookies")
         if response == "null":
@@ -517,6 +558,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def set_cookies(self, url: str, name: str, value: str, options: dict = None) -> bool:
         """
         设置指定 url 的 Cookies
+
         :param url: 要设置 Cookie 的域
         :param name: Cookie 名
         :param value: Cookie 值
@@ -544,6 +586,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def delete_cookies(self, name: str, url: str = "", domain: str = "", path: str = "") -> bool:
         """
         删除指定 Cookie
+
         :param name: 要删除的 Cookie 的名称
         :param url: 删除所有匹配 url 和 name 的 Cookie
         :param domain: 删除所有匹配 domain 和 name 的 Cookie
@@ -555,6 +598,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def delete_all_cookies(self) -> bool:
         """
         删除所有 Cookie
+
         :return:
         """
         return self.__send_data("deleteAllCookies") == "true"
@@ -562,6 +606,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def clear_cache(self) -> bool:
         """
         清除缓存
+
         :return:
         """
         return self.__send_data("clearCache") == "true"
@@ -572,11 +617,16 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def execute_script(self, script: str) -> Optional[Any]:
         """
         注入执行 JS
+
         :param script: 要执行的 JS 代码
         :return: 假如注入代码有返回值，则返回此值，否则返回 None;
 
-        result = execute_script('(()=>"aibote rpa")()')
-        print(result)  # "aibote rpa"
+        Examples:
+
+        >>> result = execute_script('(()=>"aibote rpa")()')
+        >>> print(result)
+        "aibote rpa"
+
         """
         response = self.__send_data("executeScript", script)
         if response == "null":
@@ -589,6 +639,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def quit(self) -> bool:
         """
         退出浏览器
+
         :return:
         """
         return self.__send_data("closeBrowser") == "true"
@@ -616,6 +667,7 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     def execute(cls, listen_port: int, local: bool = True, driver_params: dict = None):
         """
         多线程启动 Socket 服务
+
         :param listen_port: 脚本监听的端口
         :param local: 脚本是否部署在本地
         :param driver_params: Web 驱动启动参数
