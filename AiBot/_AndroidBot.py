@@ -1456,7 +1456,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         try:
             params = json.loads(response)
         except Exception as e:
-            self.show_toast("获取脚本参数异常!")
+            self.show_toast(f"获取脚本参数异常: {e}")
+            self.log.error(f"获取脚本参数异常: {e}")
             raise e
         return params
 
