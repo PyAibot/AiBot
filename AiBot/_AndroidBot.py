@@ -1205,14 +1205,15 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         width, height = self.__send_data("getImageSize", image_path).split("|")
         return {"width": float(width), "height": float(height)}
 
-    def show_toast(self, text: str) -> bool:
+    def show_toast(self, text: str, duration: float = 3) -> bool:
         """
         Toast 弹窗
 
         :param text: 弹窗内容
+        :param duration: 弹窗持续时间，单位：秒
         :return:
         """
-        return self.__send_data("showToast", text) == "true"
+        return self.__send_data("showToast", text, duration * 1000) == "true"
 
     def send_keys(self, text: str) -> bool:
         """
