@@ -11,6 +11,7 @@ class Point:
     def get_points_center(self, other_point: "Point") -> "Point":
         """
         获取两个坐标点的中间坐标
+
         :param other_point: 其他的坐标点
         :return:
         """
@@ -37,6 +38,7 @@ _SubColors = List[Tuple[int, int, str]]
 def _protect(*protected):
     """
     元类工厂，禁止类属性或方法被子类重写
+
     :param protected: 禁止重新的属性或方法
     :return:
     """

@@ -45,8 +45,9 @@ class Point:
     def click(self, offset_x: float = 0, offset_y: float = 0):
         """
         点击坐标
-        :param offset_x: 坐标 x 轴偏移量；
-        :param offset_y: 坐标 y 轴偏移量；
+
+        :param offset_x: 坐标 x 轴偏移量
+        :param offset_y: 坐标 y 轴偏移量
         :return:
         """
         return self.__driver.click(self, offset_x=offset_x, offset_y=offset_y)
@@ -54,8 +55,9 @@ class Point:
     def get_points_center(self, other_point: "Point") -> "Point":
         """
         获取两个坐标点的中间坐标
+
         :param other_point: 其他的坐标点
-        :return:
+        :return: Point
         """
         return self.__class__(x=self.x + (other_point.x - self.x) / 2, y=self.y + (other_point.y - self.y) / 2,
                               driver=self.__driver)
@@ -209,23 +211,34 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def save_screenshot(self, image_name: str, region: _Region = None, algorithm: _Algorithm = None) -> Optional[str]:
         """
         保存截图，返回图片地址(手机中)或者 None
-        :param image_name: 图片名称，保存在手机 /storage/emulated/0/Android/data/com.aibot.client/files/ 路径下；
-        :param region: 截图区域，默认全屏；
-        :param algorithm: 处理截图所用算法和参数，默认保存原图；
-        :return:
 
-        # 区域相关参数
-        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
-        # 算法相关参数
-        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值
-        threshold 和 max_val 同为 255 时灰度处理.
-        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
-        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
-        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
-        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
-        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
-        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
-        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
+        :param image_name: 图片名称，保存在手机 /storage/emulated/0/Android/data/com.aibot.client/files/ 路径下；
+        :param region: 截图区域，默认全屏，``region = (起点x、起点y、终点x、终点y)``，得到一个矩形
+        :param algorithm:
+            处理截图所用算法和参数，默认保存原图，
+
+            ``algorithm = (algorithm_type, threshold, max_val)``
+
+            按元素顺序分别代表：
+
+            0. ``algorithm_type`` 算法类型
+            1. ``threshold`` 阈值
+            2. ``max_val`` 最大值
+
+            ``threshold`` 和 ``max_val`` 同为 255 时灰度处理.
+
+            ``algorithm_type`` 算法类型说明:
+
+            0. ``THRESH_BINARY``      算法，当前点值大于阈值 `threshold` 时，取最大值 ``max_val``，否则设置为 0；
+            1. ``THRESH_BINARY_INV``  算法，当前点值大于阈值 `threshold` 时，设置为 0，否则设置为最大值 max_val；
+            2. ``THRESH_TOZERO``      算法，当前点值大于阈值 `threshold` 时，不改变，否则设置为 0；
+            3. ``THRESH_TOZERO_INV``  算法，当前点值大于阈值 ``threshold`` 时，设置为 0，否则不改变；
+            4. ``THRESH_TRUNC``       算法，当前点值大于阈值 ``threshold`` 时，设置为阈值 ``threshold``，否则不改变；
+            5. ``ADAPTIVE_THRESH_MEAN_C``      算法，自适应阈值；
+            6. ``ADAPTIVE_THRESH_GAUSSIAN_C``  算法，自适应阈值；
+
+        :return: 图片地址(手机中)或者 None
+
         """
         if image_name.find("/") != -1:
             raise ValueError("`image_name` cannot contain `/`.")
@@ -247,10 +260,14 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             return self._base_path + image_name
         return None
 
-    def save_element_screenshot(self, image_name, xpath) -> Optional[str]:
+    def save_element_screenshot(self, image_name: str, xpath: str) -> Optional[str]:
         """
-        保存元素截图，返回图片地址(手机中)或者 None
-        :return:
+        保存元素截图
+
+        :param image_name: 图片名称，保存在手机 /storage/emulated/0/Android/data/com.aibot.client/files/ 路径下
+        :param xpath: xpath路径
+        :return: 图片地址(手机中)或者 None
+
         """
         rect = self.get_element_rect(xpath)
         if rect is None:
@@ -262,40 +279,37 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     # #############
     def get_color(self, point: _Point_Tuple) -> Optional[str]:
         """
-        获取指定坐标点的色值，返回色值字符串(#008577)或者 None
-        :param point: 坐标点；
-        :return:
+        获取指定坐标点的色值
+
+        :param point: 坐标点
+        :return: 色值字符串(例如: #008577)或者 None
+
         """
         response = self.__send_data("getColor", point[0], point[1])
         if response == "null":
             return None
         return response
 
-    def find_color(self, color: str, sub_colors: _SubColors = None, region: _Region = None, similarity: float = 0.9,
-                   wait_time: float = None, interval_time: float = None, raise_err: bool = None) -> Optional[Point]:
+    def find_color(self,
+                   color: str,
+                   sub_colors: _SubColors = None,
+                   region: _Region = None,
+                   similarity: float = 0.9,
+                   wait_time: float = None,
+                   interval_time: float = None,
+                   raise_err: bool = None) -> Optional[Point]:
         """
         获取指定色值的坐标点，返回坐标或者 None
+
         :param color: 颜色字符串，必须以 # 开头，例如：#008577；
         :param sub_colors: 辅助定位的其他颜色；
-        :param region: 在指定区域内找色，默认全屏；
+        :param region: 截图区域，默认全屏，``region = (起点x、起点y、终点x、终点y)``，得到一个矩形
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
         :param wait_time: 等待时间，默认取 self.wait_timeout；
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
         :param raise_err: 超时是否抛出异常；
-        :return:
+        :return: 坐标或者 None
 
-        # 区域相关参数
-        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
-        # 算法相关参数
-        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值
-        threshold 和 max_val 同为 255 时灰度处理.
-        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
-        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
-        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
-        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
-        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
-        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
-        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
         if wait_time is None:
             wait_time = self.wait_timeout
@@ -341,45 +355,89 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     # #############
     #   找图相关   #
     # #############
-    def find_image(self, image_name, region: _Region = None, algorithm: _Algorithm = None, similarity: float = 0.9,
-                   wait_time: float = None, interval_time: float = None, raise_err: bool = None) -> Optional[Point]:
+    def find_image(self,
+                   image_name, region: _Region = None,
+                   algorithm: _Algorithm = None,
+                   similarity: float = 0.9,
+                   wait_time: float = None,
+                   interval_time: float = None,
+                   raise_err: bool = None) -> Optional[Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回图片坐标或者 None
+
         :param image_name: 图片名称（手机中）；
-        :param region: 从指定区域中找图，默认全屏；
-        :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
-        :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param region: 截图区域，默认全屏，``region = (起点x、起点y、终点x、终点y)``，得到一个矩形
+        :param algorithm:
+            处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
+
+            ``algorithm = (algorithm_type, threshold, max_val)``
+
+            按元素顺序分别代表：
+
+            0. ``algorithm_type`` 算法类型
+            1. ``threshold`` 阈值
+            2. ``max_val`` 最大值
+
+            ``threshold`` 和 ``max_val`` 同为 255 时灰度处理.
+
+            ``algorithm_type`` 算法类型说明:
+
+            0. ``THRESH_BINARY``      算法，当前点值大于阈值 `threshold` 时，取最大值 ``max_val``，否则设置为 0；
+            1. ``THRESH_BINARY_INV``  算法，当前点值大于阈值 `threshold` 时，设置为 0，否则设置为最大值 max_val；
+            2. ``THRESH_TOZERO``      算法，当前点值大于阈值 `threshold` 时，不改变，否则设置为 0；
+            3. ``THRESH_TOZERO_INV``  算法，当前点值大于阈值 ``threshold`` 时，设置为 0，否则不改变；
+            4. ``THRESH_TRUNC``       算法，当前点值大于阈值 ``threshold`` 时，设置为阈值 ``threshold``，否则不改变；
+            5. ``ADAPTIVE_THRESH_MEAN_C``      算法，自适应阈值；
+            6. ``ADAPTIVE_THRESH_GAUSSIAN_C``  算法，自适应阈值；
+
+        :param similarity: 相似度，0-1 的浮点数，默认 0.9
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
-        :param raise_err: 超时是否抛出异常；
-        :return:
+        :param raise_err: 超时是否抛出异常
+        :return: 图片坐标或者 None
 
-        # 区域相关参数
-        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
-        # 算法相关参数
-        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值
-        threshold 和 max_val 同为 255 时灰度处理.
-        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
-        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
-        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
-        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
-        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
-        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
-        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
         result = self.find_images(image_name, region, algorithm, similarity, 1, wait_time, interval_time, raise_err)
         if not result:
             return None
         return result[0]
 
-    def find_images(self, image_name, region: _Region = None, algorithm: _Algorithm = None, similarity: float = 0.9,
-                    multi: int = 1, wait_time: float = None, interval_time: float = None,
+    def find_images(self,
+                    image_name,
+                    region: _Region = None,
+                    algorithm: _Algorithm = None,
+                    similarity: float = 0.9,
+                    multi: int = 1,
+                    wait_time: float = None,
+                    interval_time: float = None,
                     raise_err: bool = None) -> List[Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回坐标列表
+
         :param image_name: 图片名称（手机中）；
-        :param region: 从指定区域中找图，默认全屏；
-        :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
+        :param region: 截图区域，默认全屏，``region = (起点x、起点y、终点x、终点y)``，得到一个矩形
+        :param algorithm:
+            处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
+
+            ``algorithm = (algorithm_type, threshold, max_val)``
+
+            按元素顺序分别代表：
+
+            0. ``algorithm_type`` 算法类型
+            1. ``threshold`` 阈值
+            2. ``max_val`` 最大值
+
+            ``threshold`` 和 ``max_val`` 同为 255 时灰度处理.
+
+            ``algorithm_type`` 算法类型说明:
+
+            0. ``THRESH_BINARY``      算法，当前点值大于阈值 `threshold` 时，取最大值 ``max_val``，否则设置为 0；
+            1. ``THRESH_BINARY_INV``  算法，当前点值大于阈值 `threshold` 时，设置为 0，否则设置为最大值 max_val；
+            2. ``THRESH_TOZERO``      算法，当前点值大于阈值 `threshold` 时，不改变，否则设置为 0；
+            3. ``THRESH_TOZERO_INV``  算法，当前点值大于阈值 ``threshold`` 时，设置为 0，否则不改变；
+            4. ``THRESH_TRUNC``       算法，当前点值大于阈值 ``threshold`` 时，设置为阈值 ``threshold``，否则不改变；
+            5. ``ADAPTIVE_THRESH_MEAN_C``      算法，自适应阈值；
+            6. ``ADAPTIVE_THRESH_GAUSSIAN_C``  算法，自适应阈值；
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
         :param multi: 目标数量，默认为 1，找到 1 个目标后立即结束；
         :param wait_time: 等待时间，默认取 self.wait_timeout
@@ -387,18 +445,6 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param raise_err: 超时是否抛出异常；
         :return:
 
-        # 区域相关参数
-        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
-        # 算法相关参数
-        algorithm = (0, 0, 0) # 按元素顺序分别代表：algorithm_type 算法类型、threshold 阈值、max_val 最大值
-        threshold 和 max_val 同为 255 时灰度处理.
-        0   THRESH_BINARY      算法，当前点值大于阈值 threshold 时，取最大值 max_val，否则设置为 0；
-        1   THRESH_BINARY_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则设置为最大值 max_val；
-        2   THRESH_TOZERO      算法，当前点值大于阈值 threshold 时，不改变，否则设置为 0；
-        3   THRESH_TOZERO_INV  算法，当前点值大于阈值 threshold 时，设置为 0，否则不改变；
-        4   THRESH_TRUNC       算法，当前点值大于阈值 threshold 时，设置为阈值 threshold，否则不改变；
-        5   ADAPTIVE_THRESH_MEAN_C      算法，自适应阈值；
-        6   ADAPTIVE_THRESH_GAUSSIAN_C  算法，自适应阈值；
         """
         if wait_time is None:
             wait_time = self.wait_timeout
@@ -441,19 +487,22 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             raise TimeoutError("`find_images` 操作超时")
         return []
 
-    def find_dynamic_image(self, interval_ti: int, region: _Region = None, wait_time: float = None,
-                           interval_time: float = None, raise_err: bool = None) -> List[Point]:
+    def find_dynamic_image(self,
+                           interval_ti: int,
+                           region: _Region = None,
+                           wait_time: float = None,
+                           interval_time: float = None,
+                           raise_err: bool = None) -> List[Point]:
         """
         找动态图，对比同一张图在不同时刻是否发生变化，返回坐标列表
+
         :param interval_ti: 前后时刻的间隔时间，单位毫秒；
-        :param region: 在指定区域找图，默认全屏；
+        :param region: 截图区域，默认全屏，``region = (起点x、起点y、终点x、终点y)``，得到一个矩形
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :param raise_err: 超时是否抛出异常；
-        :return:
+        :return: 坐标列表
 
-        # 区域相关参数
-        region = (0, 0, 0, 0) 按元素顺序分别代表：起点x、起点y、终点x、终点y，最终得到一个矩形
         """
         if wait_time is None:
             wait_time = self.wait_timeout
@@ -493,9 +542,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def click(self, point: _Point_Tuple, offset_x: float = 0, offset_y: float = 0) -> bool:
         """
         点击坐标
-        :param point: 坐标；
-        :param offset_x: 坐标 x 轴偏移量；
-        :param offset_y: 坐标 y 轴偏移量；
+
+        :param point: 坐标
+        :param offset_x: 坐标 x 轴偏移量
+        :param offset_y: 坐标 y 轴偏移量
         :return:
         """
         return self.__send_data("click", point[0] + offset_x, point[1] + offset_y) == "true"
@@ -503,9 +553,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def double_click(self, point: _Point_Tuple, offset_x: float = 0, offset_y: float = 0) -> bool:
         """
         双击坐标
-        :param point: 坐标；
-        :param offset_x: 坐标 x 轴偏移量；
-        :param offset_y: 坐标 y 轴偏移量；
+
+        :param point: 坐标
+        :param offset_x: 坐标 x 轴偏移量
+        :param offset_y: 坐标 y 轴偏移量
         :return:
         """
         return self.__send_data("doubleClick", point[0] + offset_x, point[1] + offset_y) == "true"
@@ -513,10 +564,11 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def long_click(self, point: _Point_Tuple, duration: float, offset_x: float = 0, offset_y: float = 0) -> bool:
         """
         长按坐标
-        :param point: 坐标；
-        :param duration: 按住时长，单位秒；
-        :param offset_x: 坐标 x 轴偏移量；
-        :param offset_y: 坐标 y 轴偏移量；
+
+        :param point: 坐标
+        :param duration: 按住时长，单位秒
+        :param offset_x: 坐标 x 轴偏移量
+        :param offset_y: 坐标 y 轴偏移量
         :return:
         """
         return self.__send_data("longClick", point[0] + offset_x, point[1] + offset_y, duration * 1000) == "true"
@@ -524,9 +576,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def swipe(self, start_point: _Point_Tuple, end_point: _Point_Tuple, duration: float) -> bool:
         """
         滑动坐标
-        :param start_point: 起始坐标；
-        :param end_point: 结束坐标；
-        :param duration: 滑动时长，单位秒；
+
+        :param start_point: 起始坐标
+        :param end_point: 结束坐标
+        :param duration: 滑动时长，单位秒
         :return:
         """
         return self.__send_data("swipe", start_point[0], start_point[1], end_point[0], end_point[1],
@@ -535,6 +588,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def gesture(self, gesture_path: List[_Point_Tuple], duration: float) -> bool:
         """
         执行手势
+
         :param gesture_path: 手势路径，由一系列坐标点组成
         :param duration: 手势执行时长, 单位秒
         :return:
@@ -550,6 +604,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def press(self, point: _Point_Tuple, duration: float) -> bool:
         """
         手指按下
+
         :param point: 坐标
         :param duration: 持续时间
         :return:
@@ -559,6 +614,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def move(self, point: _Point_Tuple, duration: float) -> bool:
         """
         手指移动
+
         :param point: 坐标
         :param duration: 持续时间
         :return:
@@ -572,6 +628,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def press_release(self, point: _Point_Tuple, duration: float) -> bool:
         """
         按下屏幕并释放
+
         :return:
         """
         result = self.press(point, duration)
@@ -590,6 +647,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def __parse_ocr(text: str) -> list:
         """
         解析 OCR 识别出出来的信息
+
         :param text:
         :return:
         """
@@ -604,51 +662,69 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         return text_info_list
 
-    def __ocr_server(self, region: _Region = None, scale: float = 1.0) -> list:
+    def __ocr_server(self, region: _Region = None, algorithm: _Algorithm = None, scale: float = 1.0) -> list:
         """
         OCR 服务，通过 OCR 识别屏幕中文字
+
         :param region:
+        :param algorithm:
         :param scale:
         :return:
         """
         if not region:
             region = [0, 0, 0, 0]
 
-        response = self.__send_data("ocr", *region, scale)
+        if not algorithm:
+            algorithm_type, threshold, max_val = [0, 0, 0]
+        else:
+            algorithm_type, threshold, max_val = algorithm
+            if algorithm_type in (5, 6):
+                threshold = 127
+                max_val = 255
+
+        response = self.__send_data("ocr", *region, algorithm_type, threshold, max_val, scale)
         if response == "null" or response == "":
             return []
         return self.__parse_ocr(response)
 
-    def get_text(self, region: _Region = None, scale: float = 1.0) -> List[str]:
+    def get_text(self, region: _Region = None, algorithm: _Algorithm = None, scale: float = 1.0) -> List[str]:
         """
         通过 OCR 识别屏幕中的文字，返回文字列表
+
         :param region: 识别区域，默认全屏；
+        :param algorithm: 处理图片/屏幕所用算法和参数，默认保存原图；
         :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
-        :return:
+        :return: 文字列表
+
+        .. seealso::
+            :meth:`find_image`: ``region`` 和 ``algorithm`` 的参数说明
         """
-        text_info_list = self.__ocr_server(region, scale)
+        text_info_list = self.__ocr_server(region, algorithm, scale)
         text_list = []
         for text_info in text_info_list:
             text = text_info[-1][0]
             text_list.append(text)
         return text_list
 
-    def find_text(self, text: str, region: _Region = None, scale: float = 1.0) -> List[Point]:
+    def find_text(self, text: str, region: _Region = None, algorithm: _Algorithm = None, scale: float = 1.0) -> \
+            List[Point]:
         """
         查找文字所在的坐标，返回坐标列表（坐标是文本区域中心位置）
+
         :param text: 要查找的文字；
         :param region: 识别区域，默认全屏；
+        :param algorithm: 处理图片/屏幕所用算法和参数，默认保存原图；
         :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
-        :return:
-        """
-        if not region:
-            region = [0, 0, 0, 0]
+        :return: 坐标列表（坐标是文本区域中心位置）
 
+        .. seealso::
+            :meth:`find_image`: ``region`` 和 ``algorithm`` 的参数说明
+        """
         # scale 仅支持区域识别
         if region[2] == 0:
             scale = 1.0
 
-        text_info_list = self.__ocr_server(region, scale)
+        text_info_list = self.__ocr_server(region, algorithm, scale)
 
         text_points = []
         for text_info in text_info_list:
@@ -702,11 +778,12 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                          raise_err: bool = None) -> Optional[Tuple[Point, Point]]:
         """
         获取元素位置，返回元素区域左上角和右下角坐标
+
         :param xpath: xpath 路径
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :param raise_err: 超时是否抛出异常；
-        :return:
+        :return: 元素区域左上角和右下角坐标
         """
         if wait_time is None:
             wait_time = self.wait_timeout
@@ -737,11 +814,12 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                          raise_err: bool = None) -> Optional[str]:
         """
         获取元素描述
+
         :param xpath: xpath 路径
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :param raise_err: 超时是否抛出异常；
-        :return:
+        :return: 元素描述字符串
         """
         if wait_time is None:
             wait_time = self.wait_timeout
@@ -770,11 +848,12 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                          raise_err: bool = None) -> Optional[str]:
         """
         获取元素文本
+
         :param xpath: xpath 路径
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
         :param raise_err: 超时是否抛出异常；
-        :return:
+        :return: 元素文本
         """
         if wait_time is None:
             wait_time = self.wait_timeout
@@ -803,6 +882,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                          raise_err: bool = None) -> bool:
         """
         设置元素文本
+
         :param xpath:
         :param text:
         :param wait_time: 等待时间，默认取 self.wait_timeout
@@ -836,6 +916,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                       raise_err: bool = None) -> bool:
         """
         点击元素
+
         :param xpath:
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
@@ -868,6 +949,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                            raise_err: bool = None) -> bool:
         """
         遍历点击列表中的元素，直到任意一个元素返回 True
+
         :param xpath_list: xpath 列表
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
@@ -898,6 +980,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def scroll_element(self, xpath: str, direction: int = 0) -> bool:
         """
         滚动元素，0 向上滑动，1 向下滑动
+
         :param xpath: xpath 路径
         :param direction: 滚动方向，0 向上滑动，1 向下滑动
         :return:
@@ -907,6 +990,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def element_not_exists(self, xpath: str, wait_time: float = None, interval_time: float = None) -> bool:
         """
         元素是否不存在
+
         :param xpath: xpath 路径
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
@@ -931,6 +1015,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def element_exists(self, xpath: str, wait_time: float = None, interval_time: float = None) -> bool:
         """
         元素是否存在
+
         :param xpath: xpath 路径
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
@@ -956,10 +1041,11 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             Optional[str]:
         """
         遍历列表中的元素，只要任意一个元素存在就返回 True
+
         :param xpath_list: xpath 列表
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
-        :return:
+        :return: 任意一个元素存在就返回 True
         """
         if wait_time is None:
             wait_time = self.wait_timeout
@@ -979,6 +1065,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def element_is_selected(self, xpath: str) -> bool:
         """
         元素是否存在
+
         :param xpath: xpath 路径
         :return:
         """
@@ -989,7 +1076,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                                interval_time: float = 0.5, raise_err: bool = None) -> bool:
         """
         滑动列表，查找并点击指定元素
-        :param xpath:
+
+        :param xpath: xpath路径
         :param distance: 滑动距离，默认 1000
         :param duration: 滑动时间，默认 0.5 秒
         :param direction: 滑动方向，默认为 1； 1=上滑，2=下滑
@@ -1035,6 +1123,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def push_file(self, origin_path: str, to_path: str) -> bool:
         """
         将电脑文件传输到手机端
+
         :param origin_path: 源文件路径
         :param to_path: 目标存储路径
         :return:
@@ -1054,6 +1143,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def pull_file(self, remote_path: str, local_path: str) -> bool:
         """
         将手机文件传输到电脑端
+
         :param remote_path: 手机端文件路径
         :param local_path: 电脑本地文件存储路径
         :return:
@@ -1080,6 +1170,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def start_app(self, name: str, wait_time: float = None, interval_time: float = None) -> bool:
         """
         启动 APP
+
         :param name: APP名字或者包名
         :param wait_time: 等待时间，默认取 self.wait_timeout
         :param interval_time: 轮询间隔时间，默认取 self.interval_timeout
@@ -1105,21 +1196,23 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def get_device_ip(self) -> str:
         """
         获取设备IP地址
-        :return:
+
+        :return: 设备IP地址字符串
         """
         return self.client_address[0]
 
     def get_android_id(self) -> str:
         """
         获取 Android 设备 ID
-        :return:
+        :return: Android 设备 ID 字符串
         """
         return self.__send_data("getAndroidId")
 
     def get_window_size(self) -> Dict[str, float]:
         """
         获取屏幕大小
-        :return:
+
+        :return: 屏幕大小, 字典格式
         """
         width, height = self.__send_data("getWindowSize").split("|")
         return {"width": float(width), "height": float(height)}
@@ -1127,23 +1220,27 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def get_image_size(self, image_path) -> Dict[str, float]:
         """
         获取图片大小
-        :param image_path: 图片路径；
-        :return:
+
+        :param image_path: 图片路径
+        :return: 图片大小, 字典格式
         """
         width, height = self.__send_data("getImageSize", image_path).split("|")
         return {"width": float(width), "height": float(height)}
 
-    def show_toast(self, text: str) -> bool:
+    def show_toast(self, text: str, duration: float = 3) -> bool:
         """
         Toast 弹窗
-        :param text: 弹窗内容；
+
+        :param text: 弹窗内容
+        :param duration: 弹窗持续时间，单位：秒
         :return:
         """
-        return self.__send_data("showToast", text) == "true"
+        return self.__send_data("showToast", text, duration * 1000) == "true"
 
     def send_keys(self, text: str) -> bool:
         """
         发送文本，需要打开 AiBot 输入法
+
         :param text: 文本内容
         :return:
         """
@@ -1151,7 +1248,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
     def send_vk(self, vk: int) -> bool:
         """
-        发送文本，需要打开 AiBot 输入法
+        发送 vk
+
         :param vk: 虚拟键值
         :return:
 
@@ -1162,6 +1260,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def write_android_file(self, remote_path: str, text: str, append: bool) -> bool:
         """
         写入安卓文件
+
         :param remote_path: 安卓文件路径
         :param text: 要写入的文本内容
         :param append: 是否追加模式
@@ -1178,17 +1277,46 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def read_android_file(self, remote_path: str) -> Optional[str]:
         """
         读取安卓文件
+
         :param remote_path: 安卓文件路径
         :return:
         """
+        if not remote_path.startswith("/storage/emulated/0/"):
+            remote_path = "/storage/emulated/0/" + remote_path
+
         response = self.__send_data("readAndroidFile", remote_path)
         if response == "null":
             return None
         return response
 
+    def delete_android_file(self, remote_path: str) -> bool:
+        """
+        删除安卓文件
+
+        :param remote_path: 安卓文件路径
+        :return:
+        """
+        if not remote_path.startswith("/storage/emulated/0/"):
+            remote_path = "/storage/emulated/0/" + remote_path
+
+        return self.__send_data("deleteAndroidFile", remote_path) == "true"
+
+    def exists_android_file(self, remote_path: str) -> bool:
+        """
+        安卓文件是否存在
+
+        :param remote_path: 安卓文件路径
+        :return:
+        """
+        if not remote_path.startswith("/storage/emulated/0/"):
+            remote_path = "/storage/emulated/0/" + remote_path
+
+        return self.__send_data("existsAndroidFile", remote_path) == "true"
+
     def back(self) -> bool:
         """
         返回
+
         :return:
         """
         return self.__send_data("back") == "true"
@@ -1196,6 +1324,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def home(self) -> bool:
         """
         返回桌面
+
         :return:
         """
         return self.__send_data("home") == "true"
@@ -1203,6 +1332,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def recent_tasks(self) -> bool:
         """
         显示最近任务
+
         :return:
         """
         return self.__send_data("recents") == "true"
@@ -1210,6 +1340,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def open_uri(self, uri: str) -> bool:
         """
         唤起 app
+
         :param uri: app 唤醒协议
         :return:
 
@@ -1220,6 +1351,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def call_phone(self, mobile: str) -> bool:
         """
         拨打电话
+
         :param mobile: 手机号码
         :return:
         """
@@ -1228,6 +1360,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def send_msg(self, mobile, text) -> bool:
         """
         发送短信
+
         :param mobile: 手机号码
         :param text: 短信内容
         :return:
@@ -1237,6 +1370,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def get_activity(self) -> str:
         """
         获取活动页
+
         :return:
         """
         return self.__send_data("getActivity")
@@ -1244,6 +1378,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def get_package(self) -> str:
         """
         获取包名
+
         :return:
         """
         return self.__send_data("getPackage")
@@ -1251,6 +1386,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def set_clipboard_text(self, text: str) -> bool:
         """
         设置剪切板文本
+
         :param text:
         :return:
         """
@@ -1259,6 +1395,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def get_clipboard_text(self) -> str:
         """
         获取剪切板内容
+
         :return:
         """
         return self.__send_data("getClipboardText")
@@ -1269,6 +1406,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def create_text_view(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
         """
         创建文本框控件
+
         :param _id:  控件ID，不可与其他控件重复
         :param text:  控件文本
         :param x:  控件在屏幕上x坐标
@@ -1282,6 +1420,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def create_edit_view(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 150):
         """
         创建编辑框控件
+
         :param _id:  控件ID，不可与其他控件重复
         :param text:  控件文本
         :param x:  控件在屏幕上x坐标
@@ -1295,6 +1434,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def create_check_box(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
         """
         创建复选框控件
+
         :param _id:  控件ID，不可与其他控件重复
         :param text:  控件文本
         :param x:  控件在屏幕上x坐标
@@ -1308,6 +1448,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def create_web_view(self, _id: int, url: str, x: int = -1, y: int = -1, width: int = -1, height: int = -1) -> bool:
         """
         创建WebView控件
+
         :param _id: 控件ID，不可与其他控件重复
         :param url: 加载的链接
         :param x: 控件在屏幕上 x 坐标，值为 -1 时自动填充宽高
@@ -1321,6 +1462,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def clear_script_widget(self) -> bool:
         """
         清除脚本控件
+
         :return:
         """
         return self.__send_data("clearScriptControl") == "true"
@@ -1328,6 +1470,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def get_script_params(self) -> Optional[dict]:
         """
         获取脚本参数
+
         :return:
         """
         response = self.__send_data("getScriptParam")
@@ -1336,7 +1479,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         try:
             params = json.loads(response)
         except Exception as e:
-            self.show_toast("获取脚本参数异常!")
+            self.show_toast(f"获取脚本参数异常: {e}")
+            self.log.error(f"获取脚本参数异常: {e}")
             raise e
         return params
 
@@ -1363,12 +1507,14 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     def execute(cls, listen_port: int):
         """
         多线程启动 Socket 服务，执行脚本
+
         :return:
         """
 
         if listen_port < 0 or listen_port > 65535:
             raise OSError("`listen_port` must be in 0-65535.")
         print("启动服务...")
+        print("等待设备连接...")
         # 获取 IPv4 可用地址
         address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
             0]
