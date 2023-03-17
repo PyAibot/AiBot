@@ -35,6 +35,7 @@ from ._utils import _protect, _Region, _Algorithm, _SubColors
 # logger_a = logger.bind(name="a")
 # logger_b = logger.bind(name="b")
 
+
 class Point:
     def __init__(self, x: float, y: float, driver: "AndroidBotMain"):
         self.x = x
@@ -48,7 +49,7 @@ class Point:
         :param offset_y: 坐标 y 轴偏移量；
         :return:
         """
-        self.__driver.click(self, offset_x=offset_x, offset_y=offset_y)
+        return self.__driver.click(self, offset_x=offset_x, offset_y=offset_y)
 
     def get_points_center(self, other_point: "Point") -> "Point":
         """
@@ -69,6 +70,27 @@ class Point:
 
     def __repr__(self):
         return f"Point(x={self.x}, y={self.y})"
+
+
+class Point2s:
+    def __init__(self, p1: Point, p2: Point):
+        self.p1 = p1
+        self.p2 = p2
+
+    def click(self, offset_x: float = 0, offset_y: float = 0):
+        point = self.p1.get_points_center(self.p2)
+        return point.click(offset_x=offset_x, offset_y=offset_y)
+
+    def __getitem__(self, item):
+        if item == 0:
+            return self.p1
+        elif item == 1:
+            return self.p2
+        else:
+            raise IndexError("list index out of range")
+
+    def __repr__(self):
+        return f"({self.p1}, {self.p2})"
 
 
 _Point_Tuple = Union[Point, Tuple[float, float]]
