@@ -1226,7 +1226,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
     def send_vk(self, vk: int) -> bool:
         """
-        发送文本，需要打开 AiBot 输入法
+        发送 vk
 
         :param vk: 虚拟键值
         :return:
