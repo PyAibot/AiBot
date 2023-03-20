@@ -75,11 +75,22 @@ class Point:
 
 
 class Point2s:
+    """
+    代替 Point 元组
+    """
+
     def __init__(self, p1: Point, p2: Point):
         self.p1 = p1
         self.p2 = p2
 
     def click(self, offset_x: float = 0, offset_y: float = 0):
+        """
+        点击2元组中，2个坐标点的中间位置
+
+        :param offset_x:
+        :param offset_y:
+        :return:
+        """
         point = self.p1.get_points_center(self.p2)
         return point.click(offset_x=offset_x, offset_y=offset_y)
 
@@ -775,7 +786,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     #   元素操作   #
     ###############
     def get_element_rect(self, xpath: str, wait_time: float = None, interval_time: float = None,
-                         raise_err: bool = None) -> Optional[Tuple[Point, Point]]:
+                         raise_err: bool = None) -> Optional[Point2s]:
         """
         获取元素位置，返回元素区域左上角和右下角坐标
 
@@ -803,8 +814,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             # 成功
             else:
                 start_x, start_y, end_x, end_y = data.split("|")
-                return Point(x=float(start_x), y=float(start_y), driver=self), Point(x=float(end_x), y=float(end_y),
-                                                                                     driver=self)
+                return Point2s(p1=Point(x=float(start_x), y=float(start_y), driver=self),
+                               p2=Point(x=float(end_x), y=float(end_y), driver=self))
         # 超时
         if raise_err:
             raise TimeoutError("`get_element_rect` 操作超时")
