@@ -39,7 +39,7 @@ def _protect(*protected):
     """
     元类工厂，禁止类属性或方法被子类重写
 
-    :param protected: 禁止重新的属性或方法
+    :param protected: 禁止重写的属性或方法
     :return:
     """
 
