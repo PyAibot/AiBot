@@ -662,7 +662,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param text:
         :return:
         """
-        pattern = re.compile(r'(\[\[\[).+?(\)])')
+        pattern = re.compile(r'(\[\[\[\[).+?(\)]])')
         matches = pattern.finditer(text)
 
         text_info_list = []
@@ -697,6 +697,16 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         if response == "null" or response == "":
             return []
         return self.__parse_ocr(response)
+
+    def init_ocr_server(self, ip: str, port: str) -> bool:
+        """
+        初始化 OCR 服务
+
+        :param ip:
+        :param port:
+        :return:
+        """
+        return self.__send_data("initOcr", ip, port) == "true"
 
     def get_text(self, region: _Region = None, algorithm: _Algorithm = None, scale: float = 1.0) -> List[str]:
         """
