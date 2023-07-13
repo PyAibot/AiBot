@@ -693,6 +693,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 threshold = 127
                 max_val = 255
 
+        # scale 仅支持区域识别
+        if region[2] == 0:
+            scale = 1.0
+
         response = self.__send_data("ocr", *region, algorithm_type, threshold, max_val, scale)
         if response == "null" or response == "":
             return []
@@ -741,10 +745,6 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         .. seealso::
             :meth:`find_image`: ``region`` 和 ``algorithm`` 的参数说明
         """
-        # scale 仅支持区域识别
-        if region[2] == 0:
-            scale = 1.0
-
         text_info_list = self.__ocr_server(region, algorithm, scale)
 
         text_points = []
