@@ -747,6 +747,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         .. seealso::
             :meth:`find_image`: ``region`` 和 ``algorithm`` 的参数说明
         """
+        if not region:
+            region = [0, 0, 0, 0]
+
         text_info_list = self.__ocr_server(region, algorithm, scale)
 
         text_points = []
