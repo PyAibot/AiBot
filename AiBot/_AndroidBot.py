@@ -662,16 +662,18 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param text:
         :return:
         """
-        pattern = re.compile(r'(\[\[\[\[).+?(\)]])')
-        matches = pattern.finditer(text)
+        # pattern = re.compile(r'(\[\[\[).+?(\)])')
+        # matches = pattern.finditer(text)
+        #
+        # text_info_list = []
+        # for match in matches:
+        #     result_str = match.group()
+        #     text_info = literal_eval(result_str)
+        #     text_info_list.append(text_info)
+        #
+        # return text_info_list
 
-        text_info_list = []
-        for match in matches:
-            result_str = match.group()
-            text_info = literal_eval(result_str)
-            text_info_list.append(text_info)
-
-        return text_info_list
+        return literal_eval(text)
 
     def __ocr_server(self, region: _Region = None, algorithm: _Algorithm = None, scale: float = 1.0) -> list:
         """
