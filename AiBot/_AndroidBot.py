@@ -5,8 +5,8 @@ import socketserver
 import sys
 import threading
 import time
-import re
 from ast import literal_eval
+from datetime import datetime
 from typing import Optional, Dict, List, Tuple, Union
 
 from loguru import logger
@@ -1262,6 +1262,12 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :return:
         """
         return self.__send_data("showToast", text, duration * 1000) == "true"
+
+    def sleep(self, wait_time: float, interval_time: float = 1.5):
+        end_time = datetime.now().timestamp() + wait_time
+        while datetime.now().timestamp() < end_time:
+            self.show_toast("等待中...", 1)
+            time.sleep(interval_time)
 
     def send_keys(self, text: str) -> bool:
         """
