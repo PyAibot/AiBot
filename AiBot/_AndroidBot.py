@@ -83,16 +83,23 @@ class Point2s:
         self.p1 = p1
         self.p2 = p2
 
-    def click(self, offset_x: float = 0, offset_y: float = 0):
+    def click(self, offset_x: float = 0, offset_y: float = 0) -> bool:
         """
-        点击2元组中，2个坐标点的中间位置
+        点击元素的中心坐标
 
         :param offset_x:
         :param offset_y:
         :return:
         """
-        point = self.p1.get_points_center(self.p2)
-        return point.click(offset_x=offset_x, offset_y=offset_y)
+        return self.central_point().click(offset_x=offset_x, offset_y=offset_y)
+
+    def central_point(self) -> Point:
+        """
+        获取元素的中心坐标
+
+        :return:
+        """
+        return self.p1.get_points_center(self.p2)
 
     def __getitem__(self, item):
         if item == 0:
@@ -617,7 +624,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         手指按下
 
         :param point: 坐标
-        :param duration: 持续时间
+        :param duration: 持续时间，单位秒
         :return:
         """
         return self.__send_data("press", point[0], point[1], duration * 1000) == "true"
@@ -638,8 +645,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
     def press_release(self, point: _Point_Tuple, duration: float) -> bool:
         """
-        按下屏幕并释放
+        按下屏幕坐标点并释放
 
+        :param point: 按压坐标
+        :param duration: 按压时长，单位秒
         :return:
         """
         result = self.press(point, duration)
@@ -650,6 +659,22 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         if not result2:
             return False
         return True
+
+    def press_release_by_ele(self, xpath, duration: float, wait_time: float = None,
+                             interval_time: float = None, ) -> bool:
+        """
+        按压元素并释放
+
+        :param xpath: 要按压的元素
+        :param duration: 按压时长，单位秒
+        :param wait_time: 查找元素的最长等待时间
+        :param interval_time: 查找元素的轮询间隔时间
+        :return:
+        """
+        point2s = self.get_element_rect(xpath, wait_time=wait_time, interval_time=interval_time, raise_err=False)
+        if point2s is None:
+            return False
+        return self.press_release(point2s.central_point(), duration)
 
     # ##############
     #   OCR 相关   #
@@ -704,7 +729,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             return []
         return self.__parse_ocr(response)
 
-    def init_ocr_server(self, ip: str, port: int=9752) -> bool:
+    def init_ocr_server(self, ip: str, port: int = 9752) -> bool:
         """
         初始化 OCR 服务
 
@@ -1264,6 +1289,13 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         return self.__send_data("showToast", text, duration * 1000) == "true"
 
     def sleep(self, wait_time: float, interval_time: float = 1.5):
+        """
+        强制等待
+
+        :param wait_time: 等待时长
+        :param interval_time: 等待时轮询间隔时间
+        :return:
+        """
         end_time = datetime.now().timestamp() + wait_time
         while datetime.now().timestamp() < end_time:
             self.show_toast("等待中...", 1)
