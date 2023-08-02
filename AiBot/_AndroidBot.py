@@ -152,26 +152,29 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         super().__init__(request, client_address, server)
 
     def __send_data(self, *args) -> str:
-        args_len = ""
-        args_text = ""
+        try:
+            args_len = ""
+            args_text = ""
 
-        for argv in args:
-            argv = str(argv)
-            args_text += argv
-            args_len += str(len(bytes(argv, 'utf8'))) + "/"
+            for argv in args:
+                argv = str(argv)
+                args_text += argv
+                args_len += str(len(bytes(argv, 'utf8'))) + "/"
 
-        data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
+            data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        with self._lock:
-            self.log.debug(rf"---> {data}")
-            self.request.sendall(data)
-            response = self.request.recv(65535)
-            if response == b"":
-                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接")
-            data_length, data = response.split(b"/", 1)
-            while int(data_length) > len(data):
-                data += self.request.recv(65535)
-            self.log.debug(rf"<--- {data}")
+            with self._lock:
+                self.log.debug(rf"---> {data}")
+                self.request.sendall(data)
+                response = self.request.recv(65535)
+                if response == b"":
+                    raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接")
+                data_length, data = response.split(b"/", 1)
+                while int(data_length) > len(data):
+                    data += self.request.recv(65535)
+                self.log.debug(rf"<--- {data}")
+        except Exception as e:
+            self.log.info("send tcp data error: ", e)
 
         return data.decode("utf8").strip()
 
