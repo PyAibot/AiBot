@@ -598,6 +598,9 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             :meth:`save_screenshot`: ``region`` 和 ``algorithm`` 的参数说明
 
         """
+        if not region:
+            region = [0, 0, 0, 0]
+
         if hwnd_or_image_path.isdigit():
             # 句柄
             text_info_list = self.__ocr_server(hwnd_or_image_path, region, algorithm, mode)
