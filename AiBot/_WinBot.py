@@ -544,6 +544,16 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             return []
         return self.__parse_ocr(response)
 
+    def init_ocr_server(self, ip: str, port: int = 9752) -> bool:
+        """
+        初始化 OCR 服务
+
+        :param ip:
+        :param port:
+        :return:
+        """
+        return self.__send_data("initOcr", ip, port) == "true"
+
     def get_text(self, hwnd_or_image_path: str, region: _Region = None, algorithm: _Algorithm = None,
                  mode: bool = False) -> List[str]:
         """
