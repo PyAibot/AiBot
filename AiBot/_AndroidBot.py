@@ -175,7 +175,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                     data += self.request.recv(65535)
                 self.log.debug(rf"<--- {data}")
         except Exception as e:
-            self.log.info("send tcp data error: ", e)
+            self.log.info("send tcp data error: "+str(e))
             raise e
 
         return data.decode("utf8").strip()
