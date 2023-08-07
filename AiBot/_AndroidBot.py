@@ -1,8 +1,9 @@
 import abc
 import json
+import multiprocessing
+import os
 import socket
 import socketserver
-import sys
 import threading
 import time
 from ast import literal_eval
@@ -11,7 +12,11 @@ from typing import Optional, Dict, List, Tuple, Union
 
 from loguru import logger
 
+from ._multiprocess import multiprocess
+
 from ._utils import _protect, _Region, _Algorithm, _SubColors
+
+spawn = multiprocessing.get_context("spawn")
 
 # _LOG_PATH = Path(__file__).parent.resolve() / "logs"
 
@@ -125,6 +130,17 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     daemon_threads = True
     allow_reuse_address = True
 
+    def server_bind(self) -> None:
+        """Called by constructor to bind the socket.
+        May be overridden.
+        """
+        if os.name != "nt":
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        else:  # In windows, SO_REUSEPORT is not available
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind(self.server_address)
+        self.server_address = self.socket.getsockname()
+
 
 class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
     raise_err = False
@@ -175,7 +191,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                     data += self.request.recv(65535)
                 self.log.debug(rf"<--- {data}")
         except Exception as e:
-            self.log.info("send tcp data error: "+str(e))
+            self.log.info("send tcp data error: " + str(e))
             raise e
 
         return data.decode("utf8").strip()
@@ -1573,7 +1589,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
 
     @classmethod
-    def execute(cls, listen_port: int):
+    def execute(cls, listen_port: int, multi: int = 1):
         """
         多线程启动 Socket 服务，执行脚本
 
@@ -1582,13 +1598,34 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if listen_port < 0 or listen_port > 65535:
             raise OSError("`listen_port` must be in 0-65535.")
+
+        if multi < 1:
+            raise ValueError("`multi` must be >= 1.")
+
         print("启动服务...")
         print("等待设备连接...")
-        # 获取 IPv4 可用地址
-        address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
-            0]
-        *_, socket_address = address_info
 
-        # 启动 Socket 服务
-        sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
-        sock.serve_forever()
+        if multi == 1:
+            # 获取 IPv4 可用地址
+            address_info = \
+                socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[0]
+            *_, socket_address = address_info
+            # 启动 Socket 服务
+            sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
+            sock.serve_forever()
+        else:
+            # 多进程启动 Socket 服务
+            count = min(multi, os.cpu_count())
+            multiprocess(count, lambda: spawn.Process(
+                target=_run_server, args=(listen_port, cls)
+            ))
+
+
+def _run_server(listen_port, handler_cls):
+    # 获取 IPv4 可用地址
+    address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
+        0]
+    *_, socket_address = address_info
+
+    with _ThreadingTCPServer(socket_address, handler_cls, bind_and_activate=True) as server:
+        server.serve_forever()
