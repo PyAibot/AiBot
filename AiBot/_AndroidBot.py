@@ -13,7 +13,6 @@ from loguru import logger
 
 from ._utils import _protect, _Region, _Algorithm, _SubColors
 
-
 # _LOG_PATH = Path(__file__).parent.resolve() / "logs"
 
 # # rotation 文件分割，可按时间或者大小分割
@@ -34,6 +33,12 @@ from ._utils import _protect, _Region, _Algorithm, _SubColors
 # logger.add("b.log", filter=lambda record: record["extra"].get("name") == "b")
 # logger_a = logger.bind(name="a")
 # logger_b = logger.bind(name="b")
+
+Log_Format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
+             "<level>{level: <8}</level> | " \
+             "{thread.name: <8} | " \
+             "<cyan>{module}.{function}:{line}</cyan> | " \
+             "<level>{message}</level>"  # 日志内容
 
 
 class Point:
@@ -127,13 +132,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
 
-    log_path = ""
+    log_storage = False
     log_level = "INFO"
-    log_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
-                 "<level>{level: <8}</level> | " \
-                 "{thread.name: <8} | " \
-                 "<cyan>{module}.{function}:{line}</cyan> | " \
-                 "<level>{message}</level>"  # 日志内容
 
     # 基础存储路径
     _base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
@@ -142,12 +142,13 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         self._lock = threading.Lock()
         self.log = logger
 
-        self.log.remove()
-        self.log.add(sys.stdout, level=self.log_level.upper(), format=self.log_format)
-
-        if self.log_path:
-            self.log.add(self.log_path, level=self.log_level.upper(), format=self.log_format,
-                         rotation='5 MB', retention='2 days')
+        if self.log_storage:
+            thread_name = threading.current_thread().name
+            log_path = f"./logs/{thread_name}_runtime.log"
+            logger.add(log_path, level=self.log_level.upper(), format=Log_Format,
+                       filter=lambda record: record["thread"].name == thread_name,
+                       rotation='10 MB',
+                       retention='0 days')
 
         super().__init__(request, client_address, server)
 
