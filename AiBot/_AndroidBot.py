@@ -41,8 +41,8 @@ spawn = multiprocessing.get_context("spawn")
 
 Log_Format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
              "<level>{level: <8}</level> | " \
-             "{thread.name: <8} | " \
-             "<cyan>{module}.{function}:{line}</cyan> | " \
+             "{process.id} - {thread.id: <8} | " \
+             "<cyan>{module}:{line}</cyan> | " \
              "<level>{message}</level>"  # 日志内容
 
 
@@ -159,10 +159,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         self.log = logger
 
         if self.log_storage:
-            thread_name = threading.current_thread().name
-            log_path = f"./logs/{thread_name}_runtime.log"
+            log_file_name = f"{multiprocessing.current_process().ident}_{threading.current_thread().ident}"
+            log_path = f"./logs/{log_file_name}_runtime.log"
             logger.add(log_path, level=self.log_level.upper(), format=Log_Format,
-                       filter=lambda record: record["thread"].name == thread_name,
+                       filter=lambda record: f"{record['process'].id}_{record['thread'].id}" == log_file_name,
                        rotation='10 MB',
                        retention='0 days')
 
@@ -191,7 +191,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                     data += self.request.recv(65535)
                 self.log.debug(rf"<--- {data}")
         except Exception as e:
-            self.log.info("send tcp data error: " + str(e))
+            self.log.error("send tcp data error: " + str(e))
             raise e
 
         return data.decode("utf8").strip()
