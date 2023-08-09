@@ -129,7 +129,7 @@ _Point_Tuple = Union[Point, Tuple[float, float]]
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     daemon_threads = True
     allow_reuse_address = True
-    request_queue_size = 500
+    request_queue_size = 50
 
     def server_bind(self) -> None:
         """Called by constructor to bind the socket.
@@ -1606,27 +1606,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         print("启动服务...")
         print("等待设备连接...")
 
-        if multi == 1:
-            # 获取 IPv4 可用地址
-            address_info = \
-                socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[0]
-            *_, socket_address = address_info
-            # 启动 Socket 服务
-            sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
-            sock.serve_forever()
-        else:
-            # 多进程启动 Socket 服务
-            count = min(multi, os.cpu_count())
-            multiprocess(count, lambda: spawn.Process(
-                target=_run_server, args=(listen_port, cls)
-            ))
-
-
-def _run_server(listen_port, handler_cls):
-    # 获取 IPv4 可用地址
-    address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
-        0]
-    *_, socket_address = address_info
-
-    with _ThreadingTCPServer(socket_address, handler_cls, bind_and_activate=True) as server:
-        server.serve_forever()
+        # 获取 IPv4 可用地址
+        address_info = \
+            socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[0]
+        *_, socket_address = address_info
+        # 启动 Socket 服务
+        sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
+        sock.serve_forever()
