@@ -12,6 +12,9 @@ from typing import Optional, List, Tuple
 from loguru import logger
 
 from ._utils import _protect, Point, _Region, _Algorithm, _SubColors
+from urllib import request, parse
+import json
+import base64
 
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
@@ -64,18 +67,21 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        with self._lock:
-            self.log.debug(rf"->-> {data}")
-            self.request.sendall(data)
-            response = self.request.recv(65535)
-            if response == b"":
-                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
-            data_length, data = response.split(b"/", 1)
-            while int(data_length) > len(data):
-                data += self.request.recv(65535)
-            self.log.debug(rf"<-<- {data}")
+        try:
+            with self._lock:
+                self.log.debug(rf"->-> {data}")
+                self.request.sendall(data)
+                response = self.request.recv(65535)
+                if response == b"":
+                    raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
+                data_length, data = response.split(b"/", 1)
+                while int(data_length) > len(data):
+                    data += self.request.recv(65535)
+                self.log.debug(rf"<-<- {data}")
 
-        return data.decode("utf8").strip()
+            return data.decode("utf8").strip()
+        except Exception:
+            print(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
 
     # #############
     #   窗口操作   #
@@ -134,6 +140,17 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             return None
         return response
 
+    def find_desktop_window(self) -> Optional[str]:
+        """
+        查找桌面窗口句柄
+
+        :return: 桌面窗口句柄或 None
+        """
+        response = self.__send_data("findDesktopWindow")
+        if response == "null":
+            return None
+        return response
+
     def get_window_name(self, hwnd: str) -> Optional[str]:
         """
         获取窗口名称
@@ -166,6 +183,44 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("setWindowTop", hwnd, top) == "true"
 
+    def get_window_pos(self, hwnd: str, wait_time: float = None, interval_time: float = None) -> Optional[Tuple[Point, Point]]:
+        """
+        获取窗口位置
+
+        :param hwnd: 窗口句柄
+        :return:
+        """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data("getWindowPos", hwnd)
+            if response == "-1|-1|-1|-1":
+                time.sleep(interval_time)
+                continue
+            else:
+                x1, y1, x2, y2 = response.split("|")
+                return Point(x=float(x1), y=float(y1)), Point(x=float(x2), y=float(y2))
+        # 超时
+        return None
+
+    def set_window_pos(self, hwnd: str, left: float, top: float, width: float, height: float) -> bool:
+        """
+        设置窗口位置
+
+        :param hwnd: 当前窗口句柄
+        :param left: 左上角横坐标
+        :param top: 左上角纵坐标
+        :param width: 窗口宽度
+        :param height: 窗口高度
+        :return:
+        """
+        return self.__send_data("setWindowPos", hwnd, left, top, width, height) == "true"
+
     # #############
     #   键鼠操作   #
     # #############
@@ -181,6 +236,18 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         :return:
         """
         return self.__send_data("moveMouse", hwnd, x, y, mode, ele_hwnd) == "true"
+
+    def move_mouse_relative(self, hwnd: str, x: float, y: float, mode: bool = False) -> bool:
+        """
+        移动鼠标(相对坐标)
+
+        :param hwnd: 当前窗口句柄
+        :param x: 相对横坐标
+        :param y: 相对纵坐标
+        :param mode: 操作模式，后台 true，前台 false, 默认前台操作
+        :return:
+        """
+        return self.__send_data("moveMouseRelative", hwnd, x, y, mode) == "true"
 
     def scroll_mouse(self, hwnd: str, x: float, y: float, count: int, mode: bool = False) -> bool:
         """
@@ -367,6 +434,90 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 return Point(x=float(x), y=float(y))
         # 超时
         return None
+
+    def compare_color(self,
+                   hwnd: str,
+                   main_x: float,
+                   main_y: float,
+                   color: str,
+                   sub_colors: _SubColors = None,
+                   region: _Region = None,
+                   similarity: float = 0.9,
+                   mode: bool = False,
+                   wait_time: float = None,
+                   interval_time: float = None,
+                   raise_err: bool = None) -> Optional[Point]:
+        """
+        比较指定坐标点的颜色值
+
+        :param hwnd: 窗口句柄；
+        :param main_x: 主颜色所在的X坐标；
+        :param main_y: 主颜色所在的Y坐标；
+        :param color: 颜色字符串，必须以 # 开头，例如：#008577；
+        :param sub_colors: 辅助定位的其他颜色；
+        :param region: 截图区域，默认全屏，``region = (起点x、起点y、终点x、终点y)``，得到一个矩形
+        :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
+        :param raise_err: 超时是否抛出异常；
+        :return: True或者 False
+
+        """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        if raise_err is None:
+            raise_err = self.raise_err
+
+        if not region:
+            region = [0, 0, 0, 0]
+
+        if sub_colors:
+            sub_colors_str = ""
+            for sub_color in sub_colors:
+                offset_x, offset_y, color_str = sub_color
+                sub_colors_str += f"{offset_x}/{offset_y}/{color_str}\n"
+            # 去除最后一个 \n
+            sub_colors_str = sub_colors_str.strip()
+        else:
+            sub_colors_str = "null"
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            return self.__send_data("compareColor", hwnd, main_x, main_y, color, sub_colors_str, *region, similarity, mode) == "true"
+        # 超时
+        if raise_err:
+            raise TimeoutError("`compare_color` 操作超时")
+        return None
+
+    def extract_image_by_video(self, video_path: str, save_folder: str, jump_frame: int = 1) -> bool:
+        """
+        提取视频帧
+
+        :param video_path: 视频路径
+        :param save_folder: 提取的图片保存的文件夹目录
+        :param jump_frame: 跳帧，默认为1 不跳帧
+        :return: True或者False
+        """
+        return self.__send_data("extractImageByVideo", video_path, save_folder, jump_frame) == "true"
+
+    def crop_image(self, image_path, save_path, left, top, rigth, bottom) -> bool:
+        """
+        裁剪图片
+
+        :param image_path: 图片路径
+        :param save_path: 裁剪后保存的图片路径
+        :param left: 裁剪的左上角横坐标
+        :param top: 裁剪的左上角纵坐标
+        :param rigth: 裁剪的右下角横坐标
+        :param bottom: 裁剪的右下角纵坐标
+        :return: True或者False
+        """
+        return self.__send_data("cropImage", image_path, save_path, left, top, rigth, bottom) == "true"
 
     def find_images(self, hwnd: str, image_path: str, region: _Region = None, algorithm: _Algorithm = None,
                     similarity: float = 0.9, mode: bool = False, multi: int = 1, wait_time: float = None,
@@ -791,6 +942,34 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         # 超时
         return False
 
+    def invoke_element(self, hwnd: str, xpath: str, wait_time: float = None,
+                      interval_time: float = None) -> bool:
+        """
+        执行元素默认操作(一般是点击操作)
+
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
+        :return:
+        """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data('invokeElement', hwnd, xpath)
+            if response == "false":
+                time.sleep(interval_time)
+                continue
+            else:
+                return True
+        # 超时
+        return False
+
     def set_element_focus(self, hwnd: str, xpath: str, wait_time: float = None,
                           interval_time: float = None) -> bool:
         """
@@ -878,6 +1057,34 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         # 超时
         return False
 
+    def is_selected(self, hwnd: str, xpath: str,
+                       wait_time: float = None, interval_time: float = None) -> bool:
+        """
+        单/复选框是否选中
+
+        :param hwnd: 窗口句柄
+        :param xpath: 元素路径
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
+        :return:
+        """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            response = self.__send_data('isSelected', hwnd, xpath)
+            if response == "false":
+                time.sleep(interval_time)
+                continue
+            else:
+                return True
+        # 超时
+        return False
+
     def close_window(self, hwnd: str, xpath: str) -> bool:
         """
         关闭窗口
@@ -934,6 +1141,16 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("startProcess", cmd, show_window, is_wait) == "true"
 
+    def execute_command(self, command: str, waitTimeout: int = 300) -> str:
+        """
+        执行cmd命令
+
+        :param command: cmd命令，不能含 "cmd"字串
+        :param waitTimeout: 可选参数，等待结果返回超时，单位毫秒，默认300毫秒
+        :return: cmd执行结果
+        """
+        return self.__send_data("executeCommand", command, waitTimeout)
+
     def download_file(self, url: str, file_path: str, is_wait: bool) -> bool:
         """
         下载文件
@@ -944,6 +1161,417 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         :return:
         """
         return self.__send_data("downloadFile", url, file_path, is_wait) == "true"
+
+    # #############
+    #  EXCEL操作  #
+    # #############
+    def open_excel(self, excel_path: str) -> Optional[dict]:
+        """
+        打开excel文档
+
+        :param excel_path: excle路径
+        :return: excel对象或者None
+        """
+        response = self.__send_data("openExcel", excel_path)
+        if response == "null":
+            return None
+        return json.loads(response)
+
+    def open_excel_sheet(self, excel_object: dict, sheet_name: str) -> Optional[dict]:
+        """
+        打开excel表格
+
+        :param excel_object: excel对象
+        :param sheet_name: 表名
+        :return: sheet对象或者None
+        """
+        response = self.__send_data("openExcelSheet", excel_object['book'], excel_object['path'], sheet_name)
+        if response == "null":
+            return None
+        return response
+
+    def save_excel(self, excel_object: dict)  -> bool:
+        """
+        保存excel文档
+
+        :param excel_object: excel对象
+        :return: True或者False
+        """
+        return self.__send_data("saveExcel", excel_object['book'], excel_object['path']) == "true"
+
+    def write_excel_num(self, excel_object: dict, row: int, col: int, value: int)  -> bool:
+        """
+        写入数字到excel表格
+
+        :param excel_object: excel对象
+        :param row: 行
+        :param col: 列
+        :param value: 写入的值
+        :return: True或者False
+        """
+        return self.__send_data("writeExcelNum", excel_object, row, col, value) == "true"
+
+    def write_excel_str(self, excel_object: dict, row: int, col: int, str_value: str)  -> bool:
+        """
+        写入字符串到excel表格
+
+        :param excel_object: excel对象
+        :param row: 行
+        :param col: 列
+        :param str_value: 写入的值
+        :return: True或者False
+        """
+        return self.__send_data("writeExcelStr", excel_object, row, col, str_value) == "true"
+
+    def read_excel_num(self, excel_object: dict, row: int, col: int)  -> int:
+        """
+        读取excel表格数字
+
+        :param excel_object: excel对象
+        :param row: 行
+        :param col: 列
+        :return: 读取到的数字
+        """
+        response = self.__send_data("readExcelNum", excel_object, row, col)
+        return float(response)
+
+    def read_excel_str(self, excel_object: dict, row: int, col: int)  -> str:
+        """
+        读取excel表格字符串
+
+        :param excel_object: excel对象
+        :param row: 行
+        :param col: 列
+        :return: 读取到的字符
+        """
+        return self.__send_data("readExcelStr", excel_object, row, col)
+
+    def remove_excel_row(self, excel_object: dict, row_first: int, row_last: int)  -> bool:
+        """
+        删除excel表格行
+
+        :param excel_object: excel对象
+        :param row_first: 起始行
+        :param row_last: 结束行
+        :return: True或者False
+        """
+        return self.__send_data("removeExcelRow", excel_object, row_first, row_last) == "true"
+
+    def remove_excel_col(self, excel_object: dict, col_first: int, col_last: int)  -> bool:
+        """
+        删除excel表格列
+
+        :param excel_object: excel对象
+        :param col_first: 起始列
+        :param col_last: 结束列
+        :return: True或者False
+        """
+        return self.__send_data("removeExcelCol", excel_object, col_first, col_last) == "true"
+
+    # ##########
+    #  验证码  #
+    ############
+    def get_captcha(self, file_path: str, username: str, password: str, soft_id: str, code_type: str, len_min: str = '0') -> Optional[dict]:
+        """
+        识别验证码
+
+        :param file_path: 图片文件路径
+        :param username: 用户名
+        :param password: 密码
+        :param soft_id: 软件ID
+        :param code_type: 图片类型 参考https://www.chaojiying.com/price.html
+        :param len_min: 最小位数 默认0为不启用,图片类型为可变位长时可启用这个参数
+        :return: JSON
+            err_no,(数值) 返回代码  为0 表示正常，错误代码 参考https://www.chaojiying.com/api-23.html
+            err_str,(字符串) 中文描述的返回信息 
+            pic_id,(字符串) 图片标识号，或图片id号
+            pic_str,(字符串) 识别出的结果
+            md5,(字符串) md5校验值,用来校验此条数据返回是否真实有效
+        """
+        file = open(file_path, mode = "rb")
+        file_data = file.read()
+        file_base64 = base64.b64encode(file_data)
+        file.close()
+        url = "http://upload.chaojiying.net/Upload/Processing.php"
+        data = {
+            'user': username,
+            'pass': password,
+            'softid':soft_id, 
+            'codetype': code_type,
+            'len_min':len_min,
+            'file_base64': file_base64
+        }
+        headers = { 
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
+            'Content-Type' : 'application/x-www-form-urlencoded' 
+        }
+        parseData = parse.urlencode(data).encode('utf8')
+        req = request.Request(url, parseData, headers)
+        response = request.urlopen(req)
+        result = response.read().decode()
+        return json.loads(result)
+
+    def error_captcha(self, username: str, password: str, soft_id: str,pic_id: str)  -> Optional[dict]:
+        """
+        识别报错返分
+
+        :param username: 用户名
+        :param password: 密码
+        :param soft_id: 软件ID
+        :param pic_id: 图片ID 对应 getCaptcha返回值的pic_id 字段
+        :return: JSON
+            err_no,(数值) 返回代码
+            err_str,(字符串) 中文描述的返回信息
+        """
+        url = "http://upload.chaojiying.net/Upload/ReportError.php"
+        data = {
+            'user': username,
+            'pass': password,
+            'softid':soft_id, 
+            'id': pic_id,
+        }
+        headers = { 
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
+            'Content-Type' : 'application/x-www-form-urlencoded' 
+        }
+        parseData = parse.urlencode(data).encode('utf8')
+        req = request.Request(url, parseData, headers)
+        response = request.urlopen(req)
+        result = response.read().decode()
+        return json.loads(result)
+
+    def score_captcha(self, username: str, password: str)  -> Optional[dict]:
+        """
+        查询验证码剩余题分
+
+        :param username: 用户名
+        :param password: 密码
+        :return: JSON
+            err_no,(数值) 返回代码
+            err_str,(字符串) 中文描述的返回信息
+            tifen,(数值) 题分
+            tifen_lock,(数值) 锁定题分
+        """
+        url = "http://upload.chaojiying.net/Upload/GetScore.php"
+        data = {
+            'user': username,
+            'pass': password,
+        }
+        headers = { 
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
+            'Content-Type' : 'application/x-www-form-urlencoded' 
+        }
+        parseData = parse.urlencode(data).encode('utf8')
+        req = request.Request(url, parseData, headers)
+        response = request.urlopen(req)
+        result = response.read().decode()
+        return json.loads(result)
+
+    # #############
+    #   语音服务   #
+    # #############
+    def activate_speech_service(self, activate_key: str)  -> bool:
+        """
+        激活 initSpeechService (不支持win7)
+
+        :param activate_key: 激活密钥，联系管理员
+        :return: True或者False
+        """
+        return self.__send_data("activateSpeechService", activate_key) == "true"
+
+    def init_speech_service(self, speech_key: str, speech_region: str)  -> bool:
+        """
+        初始化语音服务(不支持win7)，需要调用 activateSpeechService 激活
+
+        :param speech_key: 密钥
+        :param speech_region: 区域
+        :return: True或者False
+        """
+        return self.__send_data("initSpeechService", speech_key, speech_region) == "true"
+
+    def audio_file_to_text(self, file_path, language: str) -> Optional[str]:
+        """
+        音频文件转文本
+
+        :param file_path: 音频文件路径
+        :param language: 语言，参考开发文档 语言和发音人
+        :return: 转换后的音频文本或者None
+        """
+        response = self.__send_data("audioFileToText", file_path, language)
+        if response == "null":
+            return None
+        return response
+
+    def microphone_to_text(self, language: str) -> Optional[str]:
+        """
+        麦克风输入流转换文本
+
+        :param language: 语言，参考开发文档 语言和发音人
+        :return: 转换后的音频文本或者None
+        """
+        response = self.__send_data("microphoneToText", language)
+        if response == "null":
+            return None
+        return response
+
+    def text_to_bullhorn(self, ssmlPath_or_text: str, language: str, voice_name: str)  -> bool:
+        """
+        文本合成音频到扬声器
+
+        :param ssmlPath_or_text: 要转换语音的文本或者".xml"格式文件路径
+        :param language: 语言，参考开发文档 语言和发音人
+        :param voice_name: 发音人，参考开发文档 语言和发音人
+        :return: True或者False
+        """
+        return self.__send_data("textToBullhorn", ssmlPath_or_text, language, voice_name) == "true"
+
+    def text_to_audio_file(self, ssmlPath_or_text: str, language: str, voice_name: str, audio_path: str)  -> bool:
+        """
+        文本合成音频并保存到文件
+
+        :param ssmlPath_or_text: 要转换语音的文本或者".xml"格式文件路径
+        :param language: 语言，参考开发文档 语言和发音人
+        :param voice_name: 发音人，参考开发文档 语言和发音人
+        :param audio_path: 保存音频文件路径
+        :return: True或者False
+        """
+        return self.__send_data("textToAudioFile", ssmlPath_or_text, language, voice_name, audio_path) == "true"
+
+    def microphone_translation_text(self, source_language: str, target_language: str) -> Optional[str]:
+        """
+        麦克风输入流转换文本
+
+        :param source_language: 要翻译的语言，参考开发文档 语言和发音人
+        :param target_language: 翻译后的语言，参考开发文档 语言和发音人
+        :return: 转换后的音频文本或者None
+        """
+        response = self.__send_data("microphoneTranslationText", source_language, target_language)
+        if response == "null":
+            return None
+        return response
+
+    def audio_file_translation_text(self, audio_path: str, source_language: str, target_language: str) -> Optional[str]:
+        """
+        麦克风输入流转换文本
+
+        :param audio_path: 要翻译的音频文件路径
+        :param source_language: 要翻译的语言，参考开发文档 语言和发音人
+        :param target_language: 翻译后的语言，参考开发文档 语言和发音人
+        :return: 转换后的音频文本或者None
+        """
+        response = self.__send_data("audioFileTranslationText", audio_path, source_language, target_language)
+        if response == "null":
+            return None
+        return response
+
+    # #############
+    #    数字人   #
+    # #############
+    def init_metahuman(self, metahuman_mde_path: str, metahuman_scale_value: str, is_update_metahuman: bool = False)  -> bool:
+        """
+        初始化数字人，第一次初始化需要一些时间
+
+        :param metahuman_mde_path: 数字人模型路径
+        :param metahuman_scale_value: 数字人缩放倍数，1为原始大小。为0.5时放大一倍，2则缩小一半
+        :param is_update_metahuman: 是否强制更新，默认fasle。为true时强制更新会拖慢初始化速度
+        :return: True或者False
+        """
+        return self.__send_data("initMetahuman", metahuman_mde_path, metahuman_scale_value, is_update_metahuman) == "true"
+
+    def metahuman_speech(self, save_voice_folder: str, text: str, language: str, voice_name: str, 
+                         quality: int = 0, wait_play_sound: bool = True, speech_rate: int = 0, voice_style: str = "General")  -> bool:
+        """
+        数字人说话，此函数需要调用 initSpeechService 初始化语音服务
+
+        :param save_voice_folder: 保存的发音文件目录，文件名以0开始依次增加，扩展为.wav格式
+        :param text: 要转换语音的文本
+        :param language: 语言，参考开发文档 语言和发音人
+        :param voice_name: 发音人，参考开发文档 语言和发音人
+        :param quality: 音质，0低品质  1中品质  2高品质， 默认为0低品质
+        :param wait_play_sound: 等待音频播报完毕，默认为 true等待
+        :param speech_rate:  语速，默认为0，取值范围 -100 至 200
+        :param voice_style: 语音风格，默认General常规风格，其他风格参考开发文档 语言和发音人
+        :return: True或者False
+        """
+        return self.__send_data("metahumanSpeech", save_voice_folder, text, language, voice_name, quality, wait_play_sound, speech_rate, voice_style) == "true"
+
+    def metahuman_speech_cache(self, save_voice_folder: str, text: str, language: str, voice_name: str, 
+                         quality: int = 0, wait_play_sound: bool = True, speech_rate: int = 0, voice_style: str = "General")  -> bool:
+        """
+        *数字人说话缓存模式，需要调用 initSpeechService 初始化语音服务。函数一般用于常用的话术播报，非常用话术切勿使用，否则内存泄漏
+
+        :param save_voice_folder: 保存的发音文件目录，文件名以0开始依次增加，扩展为.wav格式
+        :param text: 要转换语音的文本
+        :param language: 语言，参考开发文档 语言和发音人
+        :param voice_name: 发音人，参考开发文档 语言和发音人
+        :param quality: 音质，0低品质  1中品质  2高品质， 默认为0低品质
+        :param wait_play_sound: 等待音频播报完毕，默认为 true等待
+        :param speech_rate:  语速，默认为0，取值范围 -100 至 200
+        :param voice_style: 语音风格，默认General常规风格，其他风格参考开发文档 语言和发音人
+        :return: True或者False
+        """
+        return self.__send_data("metahumanSpeechCache", save_voice_folder, text, language, voice_name, quality, wait_play_sound, speech_rate, voice_style) == "true"
+
+    def metahuman_insert_video(self, video_file_path: str, audio_file_path: str, wait_play_video:bool = True)  -> bool:
+        """
+        数字人插入视频
+
+        :param video_file_path: 插入的视频文件路径
+        :param audio_file_path: 插入的音频文件路径
+        :param wait_play_video: 等待视频播放完毕，默认为 true等待
+        :return: True或者False
+        """
+        return self.__send_data("metahumanInsertVideo", video_file_path, audio_file_path, wait_play_video) == "true"
+
+    def replace_background(self, bg_file_path: str, replace_red: int = -1, replace_green: int = -1, replace_blue: int = -1, sim_value: int = 0)  -> bool:
+        """
+        替换数字人背景
+
+        :param bg_file_path: 数字人背景 图片/视频 路径，默认不替换背景。仅替换绿幕背景的数字人模型
+        :param replace_red: 数字人背景的三通道之一的 R通道色值。默认-1 自动提取
+        :param replace_green: 数字人背景的三通道之一的 G通道色值。默认-1 自动提取
+        :param replace_blue: 数字人背景的三通道之一的 B通道色值。默认-1 自动提取
+        :param sim_value: 相似度。 默认为0，取值应当大于等于0
+        :return: True或者False
+        """
+        return self.__send_data("replaceBackground", bg_file_path, replace_red, replace_green, replace_blue, sim_value) == "true"
+
+    def show_speech_text(self, origin_y: int = 0, font_type: str = "Arial", font_size: int = 30, font_red: int = 128,
+                          font_green: int = 255, font_blue: int = 0, italic:bool = False, underline:bool = False)  -> bool:
+        """
+        显示数字人说话的文本
+
+        :param origin_y, 第一个字显示的起始Y坐标点。 默认0 自适应高度
+        :param font_type, 字体样式，支持操作系统已安装的字体。例如"Arial"、"微软雅黑"、"楷体"
+        :param font_size, 字体的大小。默认30
+        :param font_red, 字体颜色三通道之一的 R通道色值。默认128
+        :param font_green, 字体颜色三通道之一的 G通道色值。默认255
+        :param font_blue, 字体颜色三通道之一的 B通道色值。默认0
+        :param italic, 是否斜体,默认false
+        :param underline, 是否有下划线,默认false
+        :return: True或者False
+        """
+        return self.__send_data("showSpeechText", origin_y, font_type, font_size, font_red, font_green, font_blue, italic, underline) == "true"
+
+    #################
+    #   驱动程序相关   #
+    #################
+    def get_extend_param(self) -> Optional[str]:
+        """
+        获取WindowsDriver.exe 命令扩展参数
+
+        :return: WindowsDriver 驱动程序的命令行["extendParam"] 字段的参数
+        """
+        return self.__send_data("getExtendParam")
+
+    def close_driver(self) -> bool:
+        """
+        关闭WindowsDriver.exe驱动程序
+
+        :return:
+        """
+        self.__send_data("closeDriver")
+        return
 
     # ##########
     #   其他   #

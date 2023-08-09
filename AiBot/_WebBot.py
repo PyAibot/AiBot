@@ -63,18 +63,21 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
         data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
 
-        with self._lock:
-            self.log.debug(rf"->>> {data}")
-            self.request.sendall(data)
-            response = self.request.recv(65535)
-            if response == b"":
-                raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
-            data_length, data = response.split(b"/", 1)
-            while int(data_length) > len(data):
-                data += self.request.recv(65535)
-            self.log.debug(rf"<<<- {data}")
+        try:
+            with self._lock:
+                self.log.debug(rf"->>> {data}")
+                self.request.sendall(data)
+                response = self.request.recv(65535)
+                if response == b"":
+                    raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
+                data_length, data = response.split(b"/", 1)
+                while int(data_length) > len(data):
+                    data += self.request.recv(65535)
+                self.log.debug(rf"<<<- {data}")
 
-        return data.decode("utf8").strip()
+            return data.decode("utf8").strip()
+        except Exception:
+            print(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
 
     #############
     # 页面和导航 #
@@ -643,6 +646,26 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         :return:
         """
         return self.__send_data("closeBrowser") == "true"
+
+    #################
+    #   驱动程序相关   #
+    #################
+    def get_extend_param(self) -> Optional[str]:
+        """
+        获取WebDriver.exe 命令扩展参数
+
+        :return: WebDriver 驱动程序的命令行["extendParam"] 字段的参数
+        """
+        return self.__send_data("getExtendParam")
+
+    def close_driver(self) -> bool:
+        """
+        关闭WebDriver.exe驱动程序
+
+        :return:
+        """
+        self.__send_data("closeDriver")
+        return
 
     ############
     #   其他   #
