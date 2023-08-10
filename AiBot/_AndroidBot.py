@@ -145,12 +145,12 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
 
 class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
     raise_err = False
-
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
 
     log_storage = False
     log_level = "INFO"
+    log_size = 10  # MB
 
     # 基础存储路径
     _base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
@@ -164,7 +164,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             log_path = f"./logs/{log_file_name}_runtime.log"
             logger.add(log_path, level=self.log_level.upper(), format=Log_Format,
                        filter=lambda record: f"{record['process'].id}_{record['thread'].id}" == log_file_name,
-                       rotation='10 MB',
+                       rotation=f'{self.log_size} B',
                        retention='0 days')
 
         super().__init__(request, client_address, server)
