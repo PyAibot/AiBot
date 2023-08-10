@@ -161,10 +161,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if self.log_storage:
             log_file_name = f"{multiprocessing.current_process().ident}_{threading.current_thread().ident}"
-            log_path = f"./logs/{log_file_name}_runtime.log"
+            log_path = f"./logs/runtime_{log_file_name}_" + "{time}" + ".log"
             logger.add(log_path, level=self.log_level.upper(), format=Log_Format,
                        filter=lambda record: f"{record['process'].id}_{record['thread'].id}" == log_file_name,
-                       rotation=f'{self.log_size} B',
+                       rotation=f'{self.log_size} MB',
                        retention='0 days')
 
         super().__init__(request, client_address, server)
