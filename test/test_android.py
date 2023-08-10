@@ -17,7 +17,6 @@ class CustomAndroidScript(AndroidBotMain):
         # is_use_ys = params.get("110")
         # print("理智恢复次数: ", restore_count)
         # print("是否使用源石: ", is_use_ys)
-        print(66666666)
         while True:
             time.sleep(3)
             self.show_toast("恭喜发财")

@@ -129,7 +129,7 @@ _Point_Tuple = Union[Point, Tuple[float, float]]
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     daemon_threads = True
     allow_reuse_address = True
-    request_queue_size = 50
+    request_queue_size = 200
 
     def server_bind(self) -> None:
         """Called by constructor to bind the socket.
