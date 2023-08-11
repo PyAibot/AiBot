@@ -129,7 +129,6 @@ _Point_Tuple = Union[Point, Tuple[float, float]]
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     daemon_threads = True
     allow_reuse_address = True
-    request_queue_size = 200
 
     def server_bind(self) -> None:
         """Called by constructor to bind the socket.
@@ -1603,13 +1602,15 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         if multi < 1:
             raise ValueError("`multi` must be >= 1.")
 
-        print("启动服务...")
-        print("等待设备连接...")
-
         # 获取 IPv4 可用地址
         address_info = \
             socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[0]
         *_, socket_address = address_info
         # 启动 Socket 服务
         sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
+        sock.request_queue_size = int(getattr(cls, "request_queue_size", 5))
+
+        print("启动服务...")
+        print("等待设备连接...")
+
         sock.serve_forever()
