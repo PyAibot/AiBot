@@ -161,7 +161,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         if self.log_storage:
             log_file_name = f"{multiprocessing.current_process().ident}_{threading.current_thread().ident}"
-            log_path = f"./logs/runtime_{log_file_name}_" + "{time}" + ".log"
+            log_path = "./logs/runtime_{time}_" + f"{log_file_name}" + ".log"
             logger.add(log_path, level=self.log_level.upper(), format=Log_Format,
                        filter=lambda record: f"{record['process'].id}_{record['thread'].id}" == log_file_name,
                        rotation=f'{self.log_size} MB',
@@ -170,17 +170,16 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         super().__init__(request, client_address, server)
 
     def __send_data(self, *args) -> str:
+        args_len = ""
+        args_text = ""
+
+        for argv in args:
+            argv = str(argv)
+            args_text += argv
+            args_len += str(len(bytes(argv, 'utf8'))) + "/"
+
+        data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
         try:
-            args_len = ""
-            args_text = ""
-
-            for argv in args:
-                argv = str(argv)
-                args_text += argv
-                args_len += str(len(bytes(argv, 'utf8'))) + "/"
-
-            data = (args_len.strip("/") + "\n" + args_text).encode("utf8")
-
             with self._lock:
                 self.log.debug(rf"---> {data}")
                 self.request.sendall(data)
@@ -192,7 +191,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                     data += self.request.recv(65535)
                 self.log.debug(rf"<--- {data}")
         except Exception as e:
-            self.log.error("send tcp data error: " + str(e))
+            self.log.error("send/read tcp data error: " + str(e))
             raise e
 
         return data.decode("utf8").strip()
@@ -1155,7 +1154,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param duration: 滑动时间，默认 0.5 秒
         :param direction: 滑动方向，默认为 1； 1=上滑，2=下滑
         :param count: 滑动次数
-        :param end_flag_xpath: 结束标志 xpath
+        :param end_flag_xpath: 结束标志 xpath，无标志不检测此标志
         :param wait_time: 等待时间，默认 10 分钟
         :param interval_time: 轮询间隔时间，默认 0.5 秒
         :param raise_err: 超时是否抛出异常；
@@ -1176,14 +1175,15 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         end_time = time.time() + wait_time
         current_count = 0
         while time.time() < end_time and current_count < count:
-            if self.click_element(xpath, wait_time=1, interval_time=0.01):
+            current_count += 1
+
+            if self.click_element(xpath, wait_time=1, interval_time=0.5, raise_err=False):
                 return True
 
-            if self.element_exists(end_flag_xpath, wait_time=1, interval_time=0.01):
+            if end_flag_xpath and self.element_exists(end_flag_xpath, wait_time=1, interval_time=0.5):
                 return False
 
             self.swipe(_start_point, _end_point, duration)
-            current_count += 1
             time.sleep(interval_time)
 
         if raise_err:
