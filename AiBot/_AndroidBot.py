@@ -193,6 +193,9 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             self.log.error("send/read tcp data error: " + str(e))
             raise e
 
+        # 结果为图片字节流时直接返回，防止报错
+        if data.startswith(b'\x89PNG'):
+            return data
         return data.decode("utf8").strip()
 
     def __push_file(self, func_name: str, to_path: str, file: bytes):
@@ -312,6 +315,52 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             return None
         return self.save_screenshot(image_name, region=(rect[0].x, rect[0].y, rect[1].x, rect[1].y))
 
+    def take_screenshot(self, region: _Region = None, algorithm: _Algorithm = None) -> Optional[str]:
+        """
+        保存截图，返回图像字节格式或者"null"的字节格式
+
+        :param region: 截图区域，默认全屏，``region = (起点x、起点y、终点x、终点y)``，得到一个矩形
+        :param algorithm:
+            处理截图所用算法和参数，默认保存原图，
+
+            ``algorithm = (algorithm_type, threshold, max_val)``
+
+            按元素顺序分别代表：
+
+            0. ``algorithm_type`` 算法类型
+            1. ``threshold`` 阈值
+            2. ``max_val`` 最大值
+
+            ``threshold`` 和 ``max_val`` 同为 255 时灰度处理.
+
+            ``algorithm_type`` 算法类型说明:
+
+            0. ``THRESH_BINARY``      算法，当前点值大于阈值 `threshold` 时，取最大值 ``max_val``，否则设置为 0；
+            1. ``THRESH_BINARY_INV``  算法，当前点值大于阈值 `threshold` 时，设置为 0，否则设置为最大值 max_val；
+            2. ``THRESH_TOZERO``      算法，当前点值大于阈值 `threshold` 时，不改变，否则设置为 0；
+            3. ``THRESH_TOZERO_INV``  算法，当前点值大于阈值 ``threshold`` 时，设置为 0，否则不改变；
+            4. ``THRESH_TRUNC``       算法，当前点值大于阈值 ``threshold`` 时，设置为阈值 ``threshold``，否则不改变；
+            5. ``ADAPTIVE_THRESH_MEAN_C``      算法，自适应阈值；
+            6. ``ADAPTIVE_THRESH_GAUSSIAN_C``  算法，自适应阈值；
+
+        :return: 图像字节格式或者"null"的字节格式
+
+        """
+        if not region:
+            region = [0, 0, 0, 0]
+
+        if not algorithm:
+            algorithm_type, threshold, max_val = [0, 0, 0]
+        else:
+            algorithm_type, threshold, max_val = algorithm
+            if algorithm_type in (5, 6):
+                threshold = 127
+                max_val = 255
+
+        response = self.__send_data("takeScreenshot", *region,
+                                    algorithm_type, threshold, max_val)
+        return response
+
     # #############
     #   色值相关   #
     # #############
@@ -386,9 +435,60 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             raise TimeoutError("`find_color` 操作超时")
         return None
 
-    # def compare_color(self):
-    #     """比较指定坐标点的颜色值"""
-    #     raise NotImplementedError()
+    def compare_color(self,
+                   main_x: float,
+                   main_y: float,
+                   color: str,
+                   sub_colors: _SubColors = None,
+                   region: _Region = None,
+                   similarity: float = 0.9,
+                   wait_time: float = None,
+                   interval_time: float = None,
+                   raise_err: bool = None) -> Optional[Point]:
+        """
+        比较指定坐标点的颜色值
+
+        :param main_x: 主颜色所在的X坐标；
+        :param main_y: 主颜色所在的Y坐标；
+        :param color: 颜色字符串，必须以 # 开头，例如：#008577；
+        :param sub_colors: 辅助定位的其他颜色；
+        :param region: 截图区域，默认全屏，``region = (起点x、起点y、终点x、终点y)``，得到一个矩形
+        :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
+        :param raise_err: 超时是否抛出异常；
+        :return: True或者 False
+
+        """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        if raise_err is None:
+            raise_err = self.raise_err
+
+        if not region:
+            region = [0, 0, 0, 0]
+
+        if sub_colors:
+            sub_colors_str = ""
+            for sub_color in sub_colors:
+                offset_x, offset_y, color_str = sub_color
+                sub_colors_str += f"{offset_x}/{offset_y}/{color_str}\n"
+            # 去除最后一个 \n
+            sub_colors_str = sub_colors_str.strip()
+        else:
+            sub_colors_str = "null"
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            return self.__send_data("compareColor", main_x, main_y, color, sub_colors_str, *region, similarity) == "true"
+        # 超时
+        if raise_err:
+            raise TimeoutError("`compare_color` 操作超时")
+        return None
 
     # #############
     #   找图相关   #
@@ -637,7 +737,25 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             gesture_path_str += f"{point[0]}/{point[1]}/\n"
         gesture_path_str = gesture_path_str.strip()
 
-        return self.__send_data("dispatchGesture", gesture_path_str, duration) == "true"
+        return self.__send_data("dispatchGesture", gesture_path_str, duration * 1000) == "true"
+
+    def gestures(self, gestures_path: List[_Point_Tuple]) -> bool:
+        """
+        执行多个手势
+
+        :param gestures_path: [[duration:number, [x:number, y:number], [x1:number, y1:number]...],[duration, [x1, y1], [x1, y1]...],...]duration:手势执行时长, 单位秒,gesture_path手势路径，由一系列坐标点组成
+        :return:
+        """
+
+        gestures_path_str = ""
+        for gesture_path in gestures_path:
+            gestures_path_str += f"{gesture_path[0] * 1000}/"
+            for point in gesture_path[1:len(gesture_path)]:
+                gestures_path_str += f"{point[0]}/{point[1]}/\n"
+            gestures_path_str += "\r\n"
+        gestures_path_str = gestures_path_str.strip()
+        
+        return self.__send_data("dispatchGestures", gestures_path_str) == "true"
 
     def press(self, point: _Point_Tuple, duration: float) -> bool:
         """
@@ -1433,6 +1551,19 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         """
         return self.__send_data("openUri", uri) == "true"
 
+    def start_activity(self, action: str,uri: str = '',package_name: str = '',class_name: str = '',type: str = '') -> bool:
+        """
+        Intent 跳转
+
+        :param action: 动作，例如 "android.intent.action.VIEW"
+        :param uri: 跳转链接，例如：打开支付宝扫一扫界面，"alipayqr://platformapi/startapp?saId=10000007"
+        :param package_name: 包名，"com.xxx.xxxxx"
+        :param class_name: 类名
+        :param type: 类型
+        :return: True或者 False
+        """
+        return self.__send_data("startActivity", action, uri, package_name, class_name, type) == "true"
+
     def call_phone(self, mobile: str) -> bool:
         """
         拨打电话
@@ -1568,6 +1699,77 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             self.log.error(f"获取脚本参数异常: {e}")
             raise e
         return params
+
+    # ##########
+    #  URL请求 #
+    ############
+    def url_request(self, url: str, request_type: str, content_type: str = '', post_data: str = '') -> str:
+        """
+        发送URL请求
+
+        :param url: 请求的地址，http:// 或者 https://开头
+        :param request_type: 请求类型，GET或者POST
+        :param content_type: 可选参数，用作POST 内容类型
+        :param post_data: 可选参数，用作POST 提交的数据
+        :return: 请求数据内容
+        """
+        return self.__send_data("urlRequest", url, request_type, content_type, post_data)
+
+    # ##########
+    #  验证码  #
+    ############
+    def get_captcha(self, file_path: str, username: str, password: str, soft_id: str, code_type: str, len_min: str = '0') -> Optional[dict]:
+        """
+        识别验证码
+
+        :param file_path: 图片文件路径
+        :param username: 用户名
+        :param password: 密码
+        :param soft_id: 软件ID
+        :param code_type: 图片类型 参考https://www.chaojiying.com/price.html
+        :param len_min: 最小位数 默认0为不启用,图片类型为可变位长时可启用这个参数
+        :return: JSON
+            err_no,(数值) 返回代码  为0 表示正常，错误代码 参考https://www.chaojiying.com/api-23.html
+            err_str,(字符串) 中文描述的返回信息 
+            pic_id,(字符串) 图片标识号，或图片id号
+            pic_str,(字符串) 识别出的结果
+            md5,(字符串) md5校验值,用来校验此条数据返回是否真实有效
+        """
+        if not file_path.startswith("/storage/emulated/0/"):
+            file_path = "/storage/emulated/0/" + file_path
+
+        response = self.__send_data("getCaptcha", file_path, username, password, soft_id, code_type, len_min)
+        return json.loads(response)
+
+    def error_captcha(self, username: str, password: str, soft_id: str,pic_id: str)  -> Optional[dict]:
+        """
+        识别报错返分
+
+        :param username: 用户名
+        :param password: 密码
+        :param soft_id: 软件ID
+        :param pic_id: 图片ID 对应 getCaptcha返回值的pic_id 字段
+        :return: JSON
+            err_no,(数值) 返回代码
+            err_str,(字符串) 中文描述的返回信息
+        """
+        response = self.__send_data("errorCaptcha", username, password, soft_id, pic_id)
+        return json.loads(response)
+
+    def score_captcha(self, username: str, password: str)  -> Optional[dict]:
+        """
+        查询验证码剩余题分
+
+        :param username: 用户名
+        :param password: 密码
+        :return: JSON
+            err_no,(数值) 返回代码
+            err_str,(字符串) 中文描述的返回信息
+            tifen,(数值) 题分
+            tifen_lock,(数值) 锁定题分
+        """
+        response = self.__send_data("scoreCaptcha", username, password)
+        return json.loads(response)
 
     # ##########
     #   其他   #
