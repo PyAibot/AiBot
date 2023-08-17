@@ -80,8 +80,9 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 self.log.debug(rf"<-<- {data}")
 
             return data.decode("utf8").strip()
-        except Exception:
-            print(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
+        except Exception as e:
+            self.log.error("send/read tcp data error: " + str(e))
+            raise e
 
     # #############
     #   窗口操作   #
@@ -183,7 +184,8 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("setWindowTop", hwnd, top) == "true"
 
-    def get_window_pos(self, hwnd: str, wait_time: float = None, interval_time: float = None) -> Optional[Tuple[Point, Point]]:
+    def get_window_pos(self, hwnd: str, wait_time: float = None, interval_time: float = None) -> Optional[
+        Tuple[Point, Point]]:
         """
         获取窗口位置
 
@@ -436,17 +438,17 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         return None
 
     def compare_color(self,
-                   hwnd: str,
-                   main_x: float,
-                   main_y: float,
-                   color: str,
-                   sub_colors: _SubColors = None,
-                   region: _Region = None,
-                   similarity: float = 0.9,
-                   mode: bool = False,
-                   wait_time: float = None,
-                   interval_time: float = None,
-                   raise_err: bool = None) -> Optional[Point]:
+                      hwnd: str,
+                      main_x: float,
+                      main_y: float,
+                      color: str,
+                      sub_colors: _SubColors = None,
+                      region: _Region = None,
+                      similarity: float = 0.9,
+                      mode: bool = False,
+                      wait_time: float = None,
+                      interval_time: float = None,
+                      raise_err: bool = None) -> Optional[Point]:
         """
         比较指定坐标点的颜色值
 
@@ -488,7 +490,8 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
-            return self.__send_data("compareColor", hwnd, main_x, main_y, color, sub_colors_str, *region, similarity, mode) == "true"
+            return self.__send_data("compareColor", hwnd, main_x, main_y, color, sub_colors_str, *region, similarity,
+                                    mode) == "true"
         # 超时
         if raise_err:
             raise TimeoutError("`compare_color` 操作超时")
@@ -943,7 +946,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         return False
 
     def invoke_element(self, hwnd: str, xpath: str, wait_time: float = None,
-                      interval_time: float = None) -> bool:
+                       interval_time: float = None) -> bool:
         """
         执行元素默认操作(一般是点击操作)
 
@@ -1058,7 +1061,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         return False
 
     def is_selected(self, hwnd: str, xpath: str,
-                       wait_time: float = None, interval_time: float = None) -> bool:
+                    wait_time: float = None, interval_time: float = None) -> bool:
         """
         单/复选框是否选中
 
@@ -1190,7 +1193,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             return None
         return response
 
-    def save_excel(self, excel_object: dict)  -> bool:
+    def save_excel(self, excel_object: dict) -> bool:
         """
         保存excel文档
 
@@ -1199,7 +1202,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("saveExcel", excel_object['book'], excel_object['path']) == "true"
 
-    def write_excel_num(self, excel_object: dict, row: int, col: int, value: int)  -> bool:
+    def write_excel_num(self, excel_object: dict, row: int, col: int, value: int) -> bool:
         """
         写入数字到excel表格
 
@@ -1211,7 +1214,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("writeExcelNum", excel_object, row, col, value) == "true"
 
-    def write_excel_str(self, excel_object: dict, row: int, col: int, str_value: str)  -> bool:
+    def write_excel_str(self, excel_object: dict, row: int, col: int, str_value: str) -> bool:
         """
         写入字符串到excel表格
 
@@ -1223,7 +1226,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("writeExcelStr", excel_object, row, col, str_value) == "true"
 
-    def read_excel_num(self, excel_object: dict, row: int, col: int)  -> int:
+    def read_excel_num(self, excel_object: dict, row: int, col: int) -> int:
         """
         读取excel表格数字
 
@@ -1235,7 +1238,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         response = self.__send_data("readExcelNum", excel_object, row, col)
         return float(response)
 
-    def read_excel_str(self, excel_object: dict, row: int, col: int)  -> str:
+    def read_excel_str(self, excel_object: dict, row: int, col: int) -> str:
         """
         读取excel表格字符串
 
@@ -1246,7 +1249,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("readExcelStr", excel_object, row, col)
 
-    def remove_excel_row(self, excel_object: dict, row_first: int, row_last: int)  -> bool:
+    def remove_excel_row(self, excel_object: dict, row_first: int, row_last: int) -> bool:
         """
         删除excel表格行
 
@@ -1257,7 +1260,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("removeExcelRow", excel_object, row_first, row_last) == "true"
 
-    def remove_excel_col(self, excel_object: dict, col_first: int, col_last: int)  -> bool:
+    def remove_excel_col(self, excel_object: dict, col_first: int, col_last: int) -> bool:
         """
         删除excel表格列
 
@@ -1271,7 +1274,8 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     # ##########
     #  验证码  #
     ############
-    def get_captcha(self, file_path: str, username: str, password: str, soft_id: str, code_type: str, len_min: str = '0') -> Optional[dict]:
+    def get_captcha(self, file_path: str, username: str, password: str, soft_id: str, code_type: str,
+                    len_min: str = '0') -> Optional[dict]:
         """
         识别验证码
 
@@ -1288,7 +1292,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             pic_str,(字符串) 识别出的结果
             md5,(字符串) md5校验值,用来校验此条数据返回是否真实有效
         """
-        file = open(file_path, mode = "rb")
+        file = open(file_path, mode="rb")
         file_data = file.read()
         file_base64 = base64.b64encode(file_data)
         file.close()
@@ -1296,14 +1300,14 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         data = {
             'user': username,
             'pass': password,
-            'softid':soft_id, 
+            'softid': soft_id,
             'codetype': code_type,
-            'len_min':len_min,
+            'len_min': len_min,
             'file_base64': file_base64
         }
-        headers = { 
+        headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
-            'Content-Type' : 'application/x-www-form-urlencoded' 
+            'Content-Type': 'application/x-www-form-urlencoded'
         }
         parseData = parse.urlencode(data).encode('utf8')
         req = request.Request(url, parseData, headers)
@@ -1311,7 +1315,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         result = response.read().decode()
         return json.loads(result)
 
-    def error_captcha(self, username: str, password: str, soft_id: str,pic_id: str)  -> Optional[dict]:
+    def error_captcha(self, username: str, password: str, soft_id: str, pic_id: str) -> Optional[dict]:
         """
         识别报错返分
 
@@ -1327,12 +1331,12 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         data = {
             'user': username,
             'pass': password,
-            'softid':soft_id, 
+            'softid': soft_id,
             'id': pic_id,
         }
-        headers = { 
+        headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
-            'Content-Type' : 'application/x-www-form-urlencoded' 
+            'Content-Type': 'application/x-www-form-urlencoded'
         }
         parseData = parse.urlencode(data).encode('utf8')
         req = request.Request(url, parseData, headers)
@@ -1340,7 +1344,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         result = response.read().decode()
         return json.loads(result)
 
-    def score_captcha(self, username: str, password: str)  -> Optional[dict]:
+    def score_captcha(self, username: str, password: str) -> Optional[dict]:
         """
         查询验证码剩余题分
 
@@ -1357,9 +1361,9 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             'user': username,
             'pass': password,
         }
-        headers = { 
+        headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
-            'Content-Type' : 'application/x-www-form-urlencoded' 
+            'Content-Type': 'application/x-www-form-urlencoded'
         }
         parseData = parse.urlencode(data).encode('utf8')
         req = request.Request(url, parseData, headers)
@@ -1370,7 +1374,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     # #############
     #   语音服务   #
     # #############
-    def activate_speech_service(self, activate_key: str)  -> bool:
+    def activate_speech_service(self, activate_key: str) -> bool:
         """
         激活 initSpeechService (不支持win7)
 
@@ -1379,7 +1383,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("activateSpeechService", activate_key) == "true"
 
-    def init_speech_service(self, speech_key: str, speech_region: str)  -> bool:
+    def init_speech_service(self, speech_key: str, speech_region: str) -> bool:
         """
         初始化语音服务(不支持win7)，需要调用 activateSpeechService 激活
 
@@ -1414,7 +1418,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             return None
         return response
 
-    def text_to_bullhorn(self, ssmlPath_or_text: str, language: str, voice_name: str)  -> bool:
+    def text_to_bullhorn(self, ssmlPath_or_text: str, language: str, voice_name: str) -> bool:
         """
         文本合成音频到扬声器
 
@@ -1425,7 +1429,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("textToBullhorn", ssmlPath_or_text, language, voice_name) == "true"
 
-    def text_to_audio_file(self, ssmlPath_or_text: str, language: str, voice_name: str, audio_path: str)  -> bool:
+    def text_to_audio_file(self, ssmlPath_or_text: str, language: str, voice_name: str, audio_path: str) -> bool:
         """
         文本合成音频并保存到文件
 
@@ -1467,7 +1471,8 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     # #############
     #    数字人   #
     # #############
-    def init_metahuman(self, metahuman_mde_path: str, metahuman_scale_value: str, is_update_metahuman: bool = False)  -> bool:
+    def init_metahuman(self, metahuman_mde_path: str, metahuman_scale_value: str,
+                       is_update_metahuman: bool = False) -> bool:
         """
         初始化数字人，第一次初始化需要一些时间
 
@@ -1476,10 +1481,12 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         :param is_update_metahuman: 是否强制更新，默认fasle。为true时强制更新会拖慢初始化速度
         :return: True或者False
         """
-        return self.__send_data("initMetahuman", metahuman_mde_path, metahuman_scale_value, is_update_metahuman) == "true"
+        return self.__send_data("initMetahuman", metahuman_mde_path, metahuman_scale_value,
+                                is_update_metahuman) == "true"
 
-    def metahuman_speech(self, save_voice_folder: str, text: str, language: str, voice_name: str, 
-                         quality: int = 0, wait_play_sound: bool = True, speech_rate: int = 0, voice_style: str = "General")  -> bool:
+    def metahuman_speech(self, save_voice_folder: str, text: str, language: str, voice_name: str,
+                         quality: int = 0, wait_play_sound: bool = True, speech_rate: int = 0,
+                         voice_style: str = "General") -> bool:
         """
         数字人说话，此函数需要调用 initSpeechService 初始化语音服务
 
@@ -1493,10 +1500,12 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         :param voice_style: 语音风格，默认General常规风格，其他风格参考开发文档 语言和发音人
         :return: True或者False
         """
-        return self.__send_data("metahumanSpeech", save_voice_folder, text, language, voice_name, quality, wait_play_sound, speech_rate, voice_style) == "true"
+        return self.__send_data("metahumanSpeech", save_voice_folder, text, language, voice_name, quality,
+                                wait_play_sound, speech_rate, voice_style) == "true"
 
-    def metahuman_speech_cache(self, save_voice_folder: str, text: str, language: str, voice_name: str, 
-                         quality: int = 0, wait_play_sound: bool = True, speech_rate: int = 0, voice_style: str = "General")  -> bool:
+    def metahuman_speech_cache(self, save_voice_folder: str, text: str, language: str, voice_name: str,
+                               quality: int = 0, wait_play_sound: bool = True, speech_rate: int = 0,
+                               voice_style: str = "General") -> bool:
         """
         *数字人说话缓存模式，需要调用 initSpeechService 初始化语音服务。函数一般用于常用的话术播报，非常用话术切勿使用，否则内存泄漏
 
@@ -1510,9 +1519,10 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         :param voice_style: 语音风格，默认General常规风格，其他风格参考开发文档 语言和发音人
         :return: True或者False
         """
-        return self.__send_data("metahumanSpeechCache", save_voice_folder, text, language, voice_name, quality, wait_play_sound, speech_rate, voice_style) == "true"
+        return self.__send_data("metahumanSpeechCache", save_voice_folder, text, language, voice_name, quality,
+                                wait_play_sound, speech_rate, voice_style) == "true"
 
-    def metahuman_insert_video(self, video_file_path: str, audio_file_path: str, wait_play_video:bool = True)  -> bool:
+    def metahuman_insert_video(self, video_file_path: str, audio_file_path: str, wait_play_video: bool = True) -> bool:
         """
         数字人插入视频
 
@@ -1523,7 +1533,8 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         return self.__send_data("metahumanInsertVideo", video_file_path, audio_file_path, wait_play_video) == "true"
 
-    def replace_background(self, bg_file_path: str, replace_red: int = -1, replace_green: int = -1, replace_blue: int = -1, sim_value: int = 0)  -> bool:
+    def replace_background(self, bg_file_path: str, replace_red: int = -1, replace_green: int = -1,
+                           replace_blue: int = -1, sim_value: int = 0) -> bool:
         """
         替换数字人背景
 
@@ -1534,10 +1545,12 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         :param sim_value: 相似度。 默认为0，取值应当大于等于0
         :return: True或者False
         """
-        return self.__send_data("replaceBackground", bg_file_path, replace_red, replace_green, replace_blue, sim_value) == "true"
+        return self.__send_data("replaceBackground", bg_file_path, replace_red, replace_green, replace_blue,
+                                sim_value) == "true"
 
     def show_speech_text(self, origin_y: int = 0, font_type: str = "Arial", font_size: int = 30, font_red: int = 128,
-                          font_green: int = 255, font_blue: int = 0, italic:bool = False, underline:bool = False)  -> bool:
+                         font_green: int = 255, font_blue: int = 0, italic: bool = False,
+                         underline: bool = False) -> bool:
         """
         显示数字人说话的文本
 
@@ -1551,7 +1564,8 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         :param underline, 是否有下划线,默认false
         :return: True或者False
         """
-        return self.__send_data("showSpeechText", origin_y, font_type, font_size, font_red, font_green, font_blue, italic, underline) == "true"
+        return self.__send_data("showSpeechText", origin_y, font_type, font_size, font_red, font_green, font_blue,
+                                italic, underline) == "true"
 
     #################
     #   驱动程序相关   #

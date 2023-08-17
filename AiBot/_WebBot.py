@@ -76,8 +76,9 @@ class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 self.log.debug(rf"<<<- {data}")
 
             return data.decode("utf8").strip()
-        except Exception:
-            print(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
+        except Exception as e:
+            self.log.error("send/read tcp data error: " + str(e))
+            raise e
 
     #############
     # 页面和导航 #
