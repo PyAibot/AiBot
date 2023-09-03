@@ -159,10 +159,10 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         self.log = logger
 
         if self.log_storage:
-            log_file_name = f"{multiprocessing.current_process().ident}_{threading.current_thread().ident}"
-            log_path = "./logs/runtime_{time}_" + f"{log_file_name}" + ".log"
+            process_id = multiprocessing.current_process().ident
+            log_path = f"./runtime_{process_id}.log"
             logger.add(log_path, level=self.log_level.upper(), format=Log_Format,
-                       filter=lambda record: f"{record['process'].id}_{record['thread'].id}" == log_file_name,
+                       filter=lambda record: f"{record['process'].id}" == process_id,
                        rotation=f'{self.log_size} MB',
                        retention='0 days')
 
@@ -1726,8 +1726,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         # 启动 Socket 服务
         sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
         sock.request_queue_size = int(getattr(cls, "request_queue_size", 5))
-
-        print("启动服务...")
+        print(f"Server stared on {socket_address[0]}:{socket_address[1]}")
+        print("服务已启动")
         print("等待设备连接...")
 
         sock.serve_forever()
