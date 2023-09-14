@@ -143,6 +143,9 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
         self.server_address = self.socket.getsockname()
 
 
+Count = 0
+
+
 class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
     raise_err = False
     wait_timeout = 3  # seconds
@@ -163,8 +166,12 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         self.log.add(sys.stdout, level=self.log_level.upper(), format=Log_Format)
 
         if self.log_storage:
-            self.log.add("runtime.log", level=self.log_level.upper(),
-                         format=Log_Format,
+            global Count
+            Count += 1
+            thread_id = threading.current_thread().ident
+            log_path = f"./logs/runtime{Count}_{thread_id}.log"
+            self.log.add(log_path, level=self.log_level.upper(), format=Log_Format,
+                         filter=lambda record: record['thread'].id == thread_id,
                          rotation=f'{self.log_size} MB',
                          retention='0 days')
 
