@@ -162,9 +162,6 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         self._lock = threading.Lock()
         self.log = logger
 
-        self.log.remove()
-        self.log.add(sys.stdout, level=self.log_level.upper(), format=Log_Format)
-
         if self.log_storage:
             global Count
             Count += 1
