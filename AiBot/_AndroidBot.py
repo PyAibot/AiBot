@@ -4,6 +4,7 @@ import multiprocessing
 import os
 import socket
 import socketserver
+import sys
 import threading
 import time
 from ast import literal_eval
@@ -158,11 +159,14 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         self._lock = threading.Lock()
         self.log = logger
 
+        self.log.remove()
+        self.log.add(sys.stdout, level=self.log_level.upper(), format=Log_Format)
+
         if self.log_storage:
-            log_path = f"./runtime.log"
-            logger.add(log_path, level=self.log_level.upper(), format=Log_Format,
-                       rotation=f'{self.log_size} MB',
-                       retention='0 days')
+            self.log.add("runtime.log", level=self.log_level.upper(),
+                         format=Log_Format,
+                         rotation=f'{self.log_size} MB',
+                         retention='0 days')
 
         super().__init__(request, client_address, server)
 
