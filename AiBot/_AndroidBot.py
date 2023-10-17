@@ -1277,6 +1277,33 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         return True
 
     # #############
+    #   投屏相关   #
+    # #############
+    def get_group_id(self) -> str:
+        """
+        获取投屏组号
+
+        :return:
+        """
+        return self.__send_data("getGroup")
+
+    def get_identifier(self) -> str:
+        """
+        获取投屏编号
+
+        :return:
+        """
+        return self.__send_data("get_identifier")
+
+    def get_title(self) -> str:
+        """
+        获取投屏标题
+
+        :return:
+        """
+        return self.__send_data("getTitle")
+
+    # #############
     #   设备操作   #
     # #############
 
@@ -1305,6 +1332,33 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 return True
         # 超时
         return False
+
+    def app_is_running(self, app_name: str) -> bool:
+        """
+        判断app是否正在运行(包含前后台)
+
+        :return:
+        """
+        return self.__send_data("appIsRunnig", app_name) == "true"
+
+    def close_driver(self):
+        """
+        关闭连接
+
+        :return:
+        """
+        self.__send_data("closeDriver")
+
+    def get_installed_packages(self) -> list[str]:
+        """
+        获取已安装app的包名(不包含系统APP)
+
+        :return:
+        """
+        resp = self.__send_data("getInstalledPackages")
+        if resp == "null" or resp == "":
+            return []
+        return resp.split("|")
 
     def get_device_ip(self) -> str:
         """
