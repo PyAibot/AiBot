@@ -20,7 +20,7 @@ setup_kwargs = {
     'author_email': None,
     'maintainer': 'waitan2018',
     'maintainer_email': None,
-    'url': 'https://github.com/waitan2018/AiBot',
+    'url': 'https://github.com/PyAibot/AiBot',
     'packages': packages,
     'package_data': package_data,
     'install_requires': install_requires,

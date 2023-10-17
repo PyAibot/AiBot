@@ -155,22 +155,18 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
     log_level = "INFO"
     log_size = 10  # MB
 
+    log = logger
+
+    if log_storage:
+        log.add("./runtime.log", level=log_level.upper(), format=Log_Format,
+                rotation=f'{log_size} MB',
+                retention='0 days')
+
     # 基础存储路径
     _base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
 
     def __init__(self, request, client_address, server):
         self._lock = threading.Lock()
-        self.log = logger
-
-        if self.log_storage:
-            global Count
-            Count += 1
-            thread_id = threading.current_thread().ident
-            log_path = f"./logs/runtime{Count}_{thread_id}.log"
-            self.log.add(log_path, level=self.log_level.upper(), format=Log_Format,
-                         filter=lambda record: record['thread'].id == thread_id,
-                         rotation=f'{self.log_size} MB',
-                         retention='0 days')
 
         super().__init__(request, client_address, server)
 
@@ -878,18 +874,11 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 # [ { x: 108, y: 1153 } ]
 
                 # 计算文本区域中心坐标
-                if region[2] != 0:  # 缩放
-                    text_point = Point(
-                        x=float(region[0] + (start_x + offset_x) / scale),
-                        y=float(region[1] + (start_y + offset_y) / scale),
-                        driver=self
-                    )
-                else:
-                    text_point = Point(
-                        x=float(region[0] + (start_x + offset_x) * 2),
-                        y=float(region[1] + (start_y + offset_y) * 2),
-                        driver=self
-                    )
+                text_point = Point(
+                    x=float(region[0] + (start_x + offset_x) / scale),
+                    y=float(region[1] + (start_y + offset_y) / scale),
+                    driver=self
+                )
                 text_points.append(text_point)
 
         return text_points
