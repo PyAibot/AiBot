@@ -7,7 +7,7 @@ import threading
 import time
 import re
 from ast import literal_eval
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 
 from loguru import logger
 
@@ -16,6 +16,7 @@ from urllib import request, parse
 import json
 import base64
 
+_Point_Tuple = Union[Point, Tuple[float, float]]
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     daemon_threads = True
@@ -669,7 +670,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 max_val = 255
 
         response = self.__send_data("ocr", hwnd, *region, algorithm_type, threshold, max_val, mode)
-        if response == "null" or response == "":
+        if response == "null" or response == "[]":
             return []
         return self.__parse_ocr(response)
 
@@ -694,7 +695,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
                 max_val = 255
 
         response = self.__send_data("ocrByFile", image_path, *region, algorithm_type, threshold, max_val)
-        if response == "null" or response == "":
+        if response == "null" or response == "[]":
             return []
         return self.__parse_ocr(response)
 
@@ -1567,6 +1568,26 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         return self.__send_data("showSpeechText", origin_y, font_type, font_size, font_red, font_green, font_blue,
                                 italic, underline) == "true"
 
+    def make_metahuman_video(self, save_video_folder: str, text: str, language: str, voice_name: str, bg_file_path: str,
+                               sim_value: float = 0, voice_style: str = "General", quality: int = 0, speech_rate: int = 0,
+                               ) -> bool:
+        """
+        生成数字人短视频，此函数需要调用 initSpeechService 初始化语音服务
+
+        :param save_video_folder: 保存的视频目录
+        :param text: 要转换语音的文本
+        :param language: 语言，参考开发文档 语言和发音人
+        :param voice_name: 发音人，参考开发文档 语言和发音人
+        :param bg_file_path: 数字人背景 图片/视频 路径，扣除绿幕会自动获取绿幕的RGB值，null 则不替换背景。仅替换绿幕背景的数字人模型
+        :param sim_value: 相似度，默认为0。此处参数用作绿幕扣除微调RBG值。取值应当大于等于0
+        :param voice_style: 语音风格，默认General常规风格，其他风格参考开发文档 语言和发音人
+        :param quality: 音质，0低品质  1中品质  2高品质， 默认为0低品质
+        :param speech_rate:  语速，默认为0，取值范围 -100 至 200
+        :return: True或者False
+        """
+        return self.__send_data("makeMetahumanVideo", save_video_folder, text, language, voice_name, bg_file_path, sim_value, voice_style, quality,
+                                speech_rate) == "true"
+
     #################
     #   驱动程序相关   #
     #################
@@ -1586,6 +1607,153 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         """
         self.__send_data("closeDriver")
         return
+
+    # #############
+    #    Hid      #
+    # #############
+    def init_hid(self) -> bool:
+        """
+        初始化Hid
+
+        :return: True或者False
+        """
+        return self.__send_data("initHid") == "true"
+    
+    def get_hid_data(self) -> List[str]:
+        """
+        获取Hid相关数据
+
+        :return: 激活成功的hid手机的安卓ID
+        """
+        response = self.__send_data("getHidData")
+        if response == "":
+            return []
+        return response.split("|")
+    
+    def hid_press(self, android_id: str, angle: int, x: float, y: float) -> bool:
+        """
+        按下
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        return self.__send_data("hidPress", android_id, angle, x, y) == "true"
+    
+    def hid_move(self, android_id: str, angle: int, x: float, y: float, duration: float) -> bool:
+        """
+        移动
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param x: 横坐标
+        :param y: 纵坐标
+        :param duration: 移动时长,秒
+        :return: True或者False
+        """
+        return self.__send_data("hidMove", android_id, angle, x, y, duration * 1000) == "true"
+    
+    def hid_release(self, android_id: str, angle: int) -> bool:
+        """
+        释放
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :return: True或者False
+        """
+        return self.__send_data("hidRelease", android_id, angle) == "true"
+    
+    def hid_click(self, android_id: str, angle: int, x: float, y: float) -> bool:
+        """
+        单击
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        return self.__send_data("hidClick", android_id, angle, x, y) == "true"
+    
+    def hid_double_click(self, android_id: str, angle: int, x: float, y: float) -> bool:
+        """
+        双击
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        return self.__send_data("hidDoubleClick", android_id, angle, x, y) == "true"
+    
+    def hid_long_click(self, android_id: str, angle: int, x: float, y: float, duration: float) -> bool:
+        """
+        长按
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param x: 横坐标
+        :param y: 纵坐标
+        :param duration: 按下时长,秒
+        :return: True或者False
+        """
+        return self.__send_data("hidLongClick", android_id, angle, x, y, duration * 1000) == "true"
+    
+    def hid_swipe(self, android_id: str, angle: int, startX: float, startY: float, endX: float, endY: float, duration: float) -> bool:
+        """
+        滑动坐标
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param startX: 起始横坐标
+        :param startY: 起始纵坐标
+        :param endX: 结束横坐标
+        :param endY: 结束纵坐标
+        :param duration: 滑动时长,秒
+        :return: True或者False
+        """
+        return self.__send_data("hidSwipe", android_id, angle, startX, startY, endX, endY, duration * 1000) == "true"
+    
+    def hid_gesture(self, android_id: str, angle: int, gesture_path: List[_Point_Tuple], duration: float) -> bool:
+        """
+        Hid手势
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param gesture_path: 手势路径，由一系列坐标点组成
+        :param duration: 手势执行时长, 单位秒
+        :return:
+        """
+
+        gesture_path_str = ""
+        for point in gesture_path:
+            gesture_path_str += f"{point[0]}/{point[1]}/\n"
+        gesture_path_str = gesture_path_str.strip()
+
+        return self.__send_data("hidDispatchGesture", android_id, angle, gesture_path_str, duration * 1000) == "true"
+    
+    def hid_gestures(self, android_id: str, angle: int, gestures_path: List[dict['duration': float, _Point_Tuple]]) -> bool:
+        """
+        Hid多个手势
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param gestures_path: [[duration:number, [x:number, y:number], [x1:number, y1:number]...],[duration, [x1, y1], [x1, y1]...],...]duration:手势执行时长, 单位秒,gesture_path手势路径，由一系列坐标点组成
+        :return:
+        """
+
+        gestures_path_str = ""
+        for gesture_path in gestures_path:
+            gestures_path_str += f"{gesture_path[0] * 1000}/"
+            for point in gesture_path[1:len(gesture_path)]:
+                gestures_path_str += f"{point[0]}/{point[1]}/\n"
+            gestures_path_str += "\r\n"
+        gestures_path_str = gestures_path_str.strip()
+        
+        return self.__send_data("hidDispatchGestures", android_id, angle, gestures_path_str) == "true"
 
     # ##########
     #   其他   #

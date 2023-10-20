@@ -7,6 +7,7 @@ import socketserver
 import sys
 import threading
 import time
+from ._WinBot import WinBotMain
 from ast import literal_eval
 from datetime import datetime
 from typing import Optional, Dict, List, Tuple, Union
@@ -46,6 +47,9 @@ Log_Format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
              "<cyan>{module}:{line}</cyan> | " \
              "<level>{message}</level>"  # 日志内容
 
+_AndroidId = ''
+_AndroidIds = ''
+_WindowsBot = ''
 
 class Point:
     def __init__(self, x: float, y: float, driver: "AndroidBotMain"):
@@ -126,6 +130,18 @@ class Point2s:
 
 _Point_Tuple = Union[Point, Tuple[float, float]]
 
+class CustomWinScript(WinBotMain):
+    log_level = "DEBUG"
+
+    def script_main(self):
+        global _WindowsBot
+        _WindowsBot = self
+
+        while True:
+            time.sleep(60)
+
+def son():
+    CustomWinScript.execute(56668)
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     daemon_threads = True
@@ -317,7 +333,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             return None
         return self.save_screenshot(image_name, region=(rect[0].x, rect[0].y, rect[1].x, rect[1].y))
 
-    def take_screenshot(self, region: _Region = None, algorithm: _Algorithm = None) -> Optional[bytes]:
+    def take_screenshot(self, region: _Region = None, algorithm: _Algorithm = None, scale: float = 1.0) -> Optional[bytes]:
         """
         保存截图，返回图像字节格式或者"null"的字节格式
 
@@ -344,6 +360,8 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             4. ``THRESH_TRUNC``       算法，当前点值大于阈值 ``threshold`` 时，设置为阈值 ``threshold``，否则不改变；
             5. ``ADAPTIVE_THRESH_MEAN_C``      算法，自适应阈值；
             6. ``ADAPTIVE_THRESH_GAUSSIAN_C``  算法，自适应阈值；
+        :param algorithm:
+            scale浮点型 图片缩放率, 默认为 1.0 原大小。小于1.0缩小，大于1.0放大
 
         :return: 图像字节格式或者"null"的字节格式
 
@@ -359,7 +377,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
                 threshold = 127
                 max_val = 255
 
-        response = self.__send_data_return_bytes("takeScreenshot", *region, algorithm_type, threshold, max_val)
+        response = self.__send_data_return_bytes("takeScreenshot", *region, algorithm_type, threshold, max_val, scale)
         if response == b'null':
             return None
         return response
@@ -436,6 +454,61 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         # 超时
         if raise_err:
             raise TimeoutError("`find_color` 操作超时")
+        return None
+
+    def compare_color(self,
+                   main_x: float,
+                   main_y: float,
+                   color: str,
+                   sub_colors: _SubColors = None,
+                   region: _Region = None,
+                   similarity: float = 0.9,
+                   wait_time: float = None,
+                   interval_time: float = None,
+                   raise_err: bool = None) -> bool:
+        """
+        比较指定坐标点的颜色值
+
+        :param main_x: 主颜色所在的X坐标；
+        :param main_y: 主颜色所在的Y坐标；
+        :param color: 颜色字符串，必须以 # 开头，例如：#008577；
+        :param sub_colors: 辅助定位的其他颜色；
+        :param region: 截图区域，默认全屏，``region = (起点x、起点y、终点x、终点y)``，得到一个矩形
+        :param similarity: 相似度，0-1 的浮点数，默认 0.9；
+        :param wait_time: 等待时间，默认取 self.wait_timeout；
+        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
+        :param raise_err: 超时是否抛出异常；
+        :return: True或者 False
+
+        """
+        if wait_time is None:
+            wait_time = self.wait_timeout
+
+        if interval_time is None:
+            interval_time = self.interval_timeout
+
+        if raise_err is None:
+            raise_err = self.raise_err
+
+        if not region:
+            region = [0, 0, 0, 0]
+
+        if sub_colors:
+            sub_colors_str = ""
+            for sub_color in sub_colors:
+                offset_x, offset_y, color_str = sub_color
+                sub_colors_str += f"{offset_x}/{offset_y}/{color_str}\n"
+            # 去除最后一个 \n
+            sub_colors_str = sub_colors_str.strip()
+        else:
+            sub_colors_str = "null"
+
+        end_time = time.time() + wait_time
+        while time.time() < end_time:
+            return self.__send_data("compareColor", main_x, main_y, color, sub_colors_str, *region, similarity) == "true"
+        # 超时
+        if raise_err:
+            raise TimeoutError("`compare_color` 操作超时")
         return None
 
     # #############
@@ -687,6 +760,24 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         return self.__send_data("dispatchGesture", gesture_path_str, duration * 1000) == "true"
 
+    def gestures(self, gestures_path: List[dict['duration': float, _Point_Tuple]]) -> bool:
+        """
+        执行多个手势
+
+        :param gestures_path: [[duration:number, [x:number, y:number], [x1:number, y1:number]...],[duration, [x1, y1], [x1, y1]...],...]duration:手势执行时长, 单位秒,gesture_path手势路径，由一系列坐标点组成
+        :return:
+        """
+
+        gestures_path_str = ""
+        for gesture_path in gestures_path:
+            gestures_path_str += f"{gesture_path[0] * 1000}/"
+            for point in gesture_path[1:len(gesture_path)]:
+                gestures_path_str += f"{point[0]}/{point[1]}/\n"
+            gestures_path_str += "\r\n"
+        gestures_path_str = gestures_path_str.strip()
+        
+        return self.__send_data("dispatchGestures", gestures_path_str) == "true"
+
     def press(self, point: _Point_Tuple, duration: float) -> bool:
         """
         手指按下
@@ -793,7 +884,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             scale = 1.0
 
         response = self.__send_data("ocr", *region, algorithm_type, threshold, max_val, scale)
-        if response == "null" or response == "":
+        if response == "null" or response == "[]":
             return []
         return self.__parse_ocr(response)
 
@@ -813,7 +904,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         :param region: 识别区域，默认全屏；
         :param algorithm: 处理图片/屏幕所用算法和参数，默认保存原图；
-        :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
+        :param scale: 图片缩放率, 默认为 1.0 原大小。大于1.0放大，小于1.0缩小，不能为负数。仅在区域识别有效
         :return: 文字列表
 
         .. seealso::
@@ -834,7 +925,7 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
         :param text: 要查找的文字；
         :param region: 识别区域，默认全屏；
         :param algorithm: 处理图片/屏幕所用算法和参数，默认保存原图；
-        :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
+        :param scale: 图片缩放率, 默认为 1.0 原大小。大于1.0放大，小于1.0缩小，不能为负数。仅在区域识别有效
         :return: 坐标列表（坐标是文本区域中心位置）
 
         .. seealso::
@@ -1493,6 +1584,19 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
 
         return self.__send_data("existsAndroidFile", remote_path) == "true"
 
+    def get_android_sub_files(self, android_directory) -> List[str]:
+        """
+        获取文件夹内的所有文件(不包含深层子目录)
+
+        :param android_directory: 安卓目录，安卓外部存储根目录 /storage/emulated/0/
+        :return:
+        """
+
+        response = self.__send_data("getAndroidSubFiles", android_directory)
+        if response == "null":
+            return []
+        return response.split("|")
+
     def back(self) -> bool:
         """
         返回
@@ -1677,6 +1781,200 @@ class AndroidBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle
             self.log.error(f"获取脚本参数异常: {e}")
             raise e
         return params
+
+    def __start_windows_bot(self) -> None:
+        thr = threading.Thread(target=son)
+        thr.start()
+
+    def __init_accessory(self) -> bool:
+        """
+        初始化android Accessory，获取手机hid相关的数据。
+
+        :return:
+        """
+        return self.__send_data("initAccessory") == "true"
+    
+    def init_hid(self) -> bool:
+        """
+        初始化Hid
+        
+        hid实际上是由windowsBot 通过数据线直接发送命令给安卓系统并执行，并不是由aibote.apk执行的命令。
+        我们应当将所有设备准备就绪再调用此函数初始化。
+        Windows initHid 和 android initAccessory函数 初始化目的是两者的数据交换，并告知windowsBot发送命令给哪台安卓设备
+
+        :return:
+        """
+        # 启动windowsDriver,一次就行
+        self.__start_windows_bot()
+        tries = 5
+        while tries > 0:
+            if _WindowsBot:
+                tries = 0
+            else:
+                tries = tries - 1
+                time.sleep(1)
+        if not _WindowsBot:
+            return False
+        
+        # 初始化android Accessory，获取手机hid相关的数据。 先调用 AndroidBot.windowsBot.initHid() 后再调用initAccessory() 顺序不能变
+        if self.__init_accessory() == False:
+            return False
+        
+        # 先调用 windowsBot.initHid，再调用androidBot.initHid。
+        # 初始化完毕再通过windowsBot.getHidData获取交换后的hid相关的数据
+        if _WindowsBot.init_hid() == False:
+            return False
+        
+        global _AndroidIds
+        if not _AndroidIds:
+            _AndroidIds = _WindowsBot.get_hid_data()
+
+        if not _AndroidIds:
+            return False
+        
+        
+        
+        # 获取AndroidId 用作hid相关函数区分手机设备
+        global _AndroidId
+        _AndroidId = self.get_android_id()
+        for AndroidId in _AndroidIds:
+            if AndroidId == _AndroidId:
+                return True
+
+        return False
+    
+    def get_rotation_angle(self) -> int:
+        """
+        获取手机旋转角度
+
+        :return: 手机旋转的角度
+        """
+        return int(self.__send_data("getRotationAngle"))
+
+    def hid_press(self, x: float, y: float) -> bool:
+        """
+        按下
+
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return _WindowsBot.hid_press(_AndroidId, angle, x, y) == "true"
+
+    def hid_move(self, x: float, y: float, duration: float) -> bool:
+        """
+        移动
+
+        :param x: 横坐标
+        :param y: 纵坐标
+        :param duration: 移动时长,秒(移动时间内脚本需保持运行)
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return _WindowsBot.hid_move(_AndroidId, angle, x, y, duration) == "true"
+
+    def hid_release(self) -> bool:
+        """
+        释放
+
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return _WindowsBot.hid_release(_AndroidId, angle) == "true"
+    
+    def hid_click(self, x: float, y: float) -> bool:
+        """
+        单击
+
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return _WindowsBot.hid_click(_AndroidId, angle, x, y) == "true"
+    
+    def hid_double_click(self, x: float, y: float) -> bool:
+        """
+        双击
+
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return _WindowsBot.hid_double_click(_AndroidId, angle, x, y) == "true"
+    
+    def hid_long_click(self, x: float, y: float, duration: float) -> bool:
+        """
+        长按
+
+        :param x: 横坐标
+        :param y: 纵坐标
+        :param duration: 按下时长,秒(按下时间内脚本需保持运行)
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return _WindowsBot.hid_long_click(_AndroidId, angle, x, y, duration) == "true"
+    
+    def hid_swipe(self, startX: float, startY: float, endX: float, endY: float, duration: float) -> bool:
+        """
+        滑动坐标
+
+        :param startX: 起始横坐标
+        :param startY: 起始纵坐标
+        :param endX: 结束横坐标
+        :param endY: 结束纵坐标
+        :param duration: 滑动时长,秒(滑动时间内脚本需保持运行)
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return _WindowsBot.hid_swipe(_AndroidId, angle, startX, startY, endX, endY, duration) == "true"
+    
+    def hid_gesture(self, gesture_path: List[_Point_Tuple], duration: float) -> bool:
+        """
+        Hid手势
+
+        :param gesture_path: 手势路径，由一系列坐标点组成
+        :param duration: 手势执行时长, 单位秒(执行时间内脚本需保持运行)
+        :return:
+        """
+        angle = self.get_rotation_angle()
+        return _WindowsBot.hid_gesture(_AndroidId, angle, gesture_path, duration) == "true"
+    
+    def hid_gestures(self, gestures_path: List[dict['duration': float, _Point_Tuple]]) -> bool:
+        """
+        Hid多个手势
+
+        :param gestures_path: [[duration:number, [x:number, y:number], [x1:number, y1:number]...],[duration, [x1, y1], [x1, y1]...],...]duration:手势执行时长, 单位秒,gesture_path手势路径，由一系列坐标点组成，(执行时间内脚本需保持运行)
+        :return:
+        """
+        angle = self.get_rotation_angle()
+        return _WindowsBot.hid_gestures(_AndroidId, angle, gestures_path) == "true"
+
+    def close_driver(self) -> None:
+        """
+        关闭连接
+
+        :return:
+        """
+        self.__send_data("closeDriver")
+        return None
+    
+    # ##########
+    #  URL请求 #
+    ############
+    def url_request(self, url: str, request_type: str, content_type: str = 'null', post_data: str = 'null') -> str:
+        """
+        发送URL请求
+
+        :param url: 请求的地址，http:// 或者 https://开头
+        :param request_type: 请求类型，GET或者POST
+        :param content_type: 可选参数，用作POST 内容类型
+        :param post_data: 可选参数，用作POST 提交的数据
+        :return: 请求数据内容
+        """
+        return self.__send_data("urlRequest", url, request_type, content_type, post_data)
 
     # ##########
     #  验证码  #
