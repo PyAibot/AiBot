@@ -18,7 +18,7 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
 
 
-class WebBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
+class _WebBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
     raise_err = False
 
     wait_timeout = 3  # seconds

@@ -5,16 +5,15 @@ import subprocess
 import sys
 import threading
 import time
-import re
+import json
+import base64
 from ast import literal_eval
 from typing import Optional, List, Tuple
+from urllib import request, parse
 
 from loguru import logger
 
 from ._utils import _protect, Point, _Region, _Algorithm, _SubColors
-from urllib import request, parse
-import json
-import base64
 
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
@@ -22,7 +21,7 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
 
 
-class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
+class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
     raise_err = False
 
     wait_timeout = 3  # seconds
@@ -1274,7 +1273,8 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
     # ##########
     #  验证码  #
     ############
-    def get_captcha(self, file_path: str, username: str, password: str, soft_id: str, code_type: str,
+    @staticmethod
+    def get_captcha(file_path: str, username: str, password: str, soft_id: str, code_type: str,
                     len_min: str = '0') -> Optional[dict]:
         """
         识别验证码
@@ -1287,7 +1287,7 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         :param len_min: 最小位数 默认0为不启用,图片类型为可变位长时可启用这个参数
         :return: JSON
             err_no,(数值) 返回代码  为0 表示正常，错误代码 参考https://www.chaojiying.com/api-23.html
-            err_str,(字符串) 中文描述的返回信息 
+            err_str,(字符串) 中文描述的返回信息
             pic_id,(字符串) 图片标识号，或图片id号
             pic_str,(字符串) 识别出的结果
             md5,(字符串) md5校验值,用来校验此条数据返回是否真实有效
@@ -1309,13 +1309,14 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-        parseData = parse.urlencode(data).encode('utf8')
-        req = request.Request(url, parseData, headers)
+        parse_data = parse.urlencode(data).encode('utf8')
+        req = request.Request(url, parse_data, headers)
         response = request.urlopen(req)
         result = response.read().decode()
         return json.loads(result)
 
-    def error_captcha(self, username: str, password: str, soft_id: str, pic_id: str) -> Optional[dict]:
+    @staticmethod
+    def error_captcha(username: str, password: str, soft_id: str, pic_id: str) -> Optional[dict]:
         """
         识别报错返分
 
@@ -1344,7 +1345,8 @@ class WinBotMain(socketserver.BaseRequestHandler, metaclass=_protect("handle", "
         result = response.read().decode()
         return json.loads(result)
 
-    def score_captcha(self, username: str, password: str) -> Optional[dict]:
+    @staticmethod
+    def score_captcha(username: str, password: str) -> Optional[dict]:
         """
         查询验证码剩余题分
 

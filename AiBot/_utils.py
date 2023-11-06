@@ -1,23 +1,20 @@
 import abc
 from typing import Union, Tuple, List
 
+Log_Format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
+             "<level>{level: <8}</level> | " \
+             "{process.id} - {thread.id: <8} | " \
+             "<cyan>{module}:{line}</cyan> | " \
+             "<level>{message}</level>"  # 日志内容
+
 
 class Point:
-
-    def __init__(self, x: float, y: float):
+    def __init__(self, x: float, y: float, driver=None):
         self.x = x
         self.y = y
+        self.__driver = driver
 
-    def get_points_center(self, other_point: "Point") -> "Point":
-        """
-        获取两个坐标点的中间坐标
-
-        :param other_point: 其他的坐标点
-        :return:
-        """
-        return self.__class__(x=self.x + (other_point.x - self.x) / 2, y=self.y + (other_point.y - self.y) / 2)
-
-    def __getitem__(self, item: int):
+    def __getitem__(self, item):
         if item == 0:
             return self.x
         elif item == 1:
@@ -27,6 +24,65 @@ class Point:
 
     def __repr__(self):
         return f"Point(x={self.x}, y={self.y})"
+
+    def click(self, offset_x: float = 0, offset_y: float = 0):
+        """
+        点击坐标
+
+        :param offset_x: 坐标 x 轴偏移量
+        :param offset_y: 坐标 y 轴偏移量
+        :return:
+        """
+        return self.__driver.click(self, offset_x=offset_x, offset_y=offset_y)
+
+    def get_points_center(self, other_point: "Point") -> "Point":
+        """
+        获取两个坐标点的中间坐标
+
+        :param other_point: 其他的坐标点
+        :return: Point
+        """
+        return self.__class__(x=self.x + (other_point.x - self.x) / 2, y=self.y + (other_point.y - self.y) / 2,
+                              driver=self.__driver)
+
+
+class Point2s:
+    """
+    代替 Point 元组
+    """
+
+    def __init__(self, p1: Point, p2: Point):
+        self.p1 = p1
+        self.p2 = p2
+
+    def __getitem__(self, item):
+        if item == 0:
+            return self.p1
+        elif item == 1:
+            return self.p2
+        else:
+            raise IndexError("list index out of range")
+
+    def __repr__(self):
+        return f"({self.p1}, {self.p2})"
+
+    def click(self, offset_x: float = 0, offset_y: float = 0) -> bool:
+        """
+        点击元素的中心坐标
+
+        :param offset_x:
+        :param offset_y:
+        :return:
+        """
+        return self.central_point().click(offset_x=offset_x, offset_y=offset_y)
+
+    def central_point(self) -> Point:
+        """
+        获取元素的中心坐标
+
+        :return:
+        """
+        return self.p1.get_points_center(self.p2)
 
 
 _Point_Tuple = Union[Point, Tuple[float, float]]

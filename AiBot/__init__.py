@@ -1,5 +1,5 @@
-from ._AndroidBot import AndroidBotMain
-from ._WinBot import WinBotMain
-from ._WebBot import WebBotMain
+from ._AndroidBase import AndroidBotMain
+from ._WinBase import WinBotMain
+from ._WebBase import WebBotMain
 
 __all__ = ["AndroidBotMain", "WinBotMain", "WebBotMain"]
