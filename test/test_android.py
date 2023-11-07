@@ -8,7 +8,8 @@ class CustomAndroidScript(AndroidBotMain):
     log_level = "DEBUG"
 
     def script_main(self):
-        win_driver = self.build_win_driver()
+        win_driver = self.build_win_driver(13366, True)
+        win_driver.get_element_rect()
 
         # self.show_toast("连接成功")
         # self.create_text_view(90, "配置参数：", 0, 0)

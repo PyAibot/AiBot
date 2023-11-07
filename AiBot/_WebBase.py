@@ -627,8 +627,8 @@ class _WebBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
 
         Examples:
 
-        >>> result = execute_script('(()=>"aibote rpa")()')
-        >>> print(result)
+        result = execute_script('(()=>"aibote rpa")()')
+        print(result)
         "aibote rpa"
 
         """
@@ -665,8 +665,7 @@ class _WebBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
 
         :return:
         """
-        self.__send_data("closeDriver")
-        return
+        return self.__send_data("closeDriver") == "true"
 
     ############
     #   其他   #
@@ -721,7 +720,6 @@ class _WebBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
                 default_params.update(driver_params)
             default_params = json.dumps(default_params)
             try:
-                print("尝试本地启动 WebDriver ...")
                 subprocess.Popen(["WebDriver.exe", default_params])
                 print("本地启动 WebDriver 成功，开始执行脚本")
             except FileNotFoundError as e:

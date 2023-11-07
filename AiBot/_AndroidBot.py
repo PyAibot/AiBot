@@ -15,17 +15,6 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def server_bind(self) -> None:
-        """Called by constructor to bind the socket.
-        May be overridden.
-        """
-        if os.name != "nt":
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        else:  # In windows, SO_REUSEPORT is not available
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind(self.server_address)
-        self.server_address = self.socket.getsockname()
-
 
 class AndroidBotMain(_AndroidBotBase):
     # ##########
@@ -48,18 +37,15 @@ class AndroidBotMain(_AndroidBotBase):
         """
 
     @classmethod
-    def execute(cls, listen_port: int, multi: int = 1):
+    def execute(cls, listen_port: int):
         """
-        多线程启动 Socket 服务，执行脚本
+        启动 Socket 服务，执行脚本
 
         :return:
         """
 
         if listen_port < 0 or listen_port > 65535:
             raise OSError("`listen_port` must be in 0-65535.")
-
-        if multi < 1:
-            raise ValueError("`multi` must be >= 1.")
 
         # 获取 IPv4 可用地址
         address_info = \
@@ -74,5 +60,5 @@ class AndroidBotMain(_AndroidBotBase):
 
         sock.serve_forever()
 
-    def build_win_driver(self) -> _WinBotBase:
-        pass
+    def build_win_driver(self, port: int, local: bool = True) -> _WinBotBase:
+        _WinBotBase.execute(port, local=local)

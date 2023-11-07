@@ -9,11 +9,11 @@ import json
 import base64
 from ast import literal_eval
 from typing import Optional, List, Tuple
-from urllib import request, parse
+from urllib import request as request_lib, parse
 
 from loguru import logger
 
-from ._utils import _protect, Point, _Region, _Algorithm, _SubColors
+from ._utils import _protect, Point, _Region, _Algorithm, _SubColors, Point2s
 
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
@@ -183,12 +183,13 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
         """
         return self.__send_data("setWindowTop", hwnd, top) == "true"
 
-    def get_window_pos(self, hwnd: str, wait_time: float = None, interval_time: float = None) -> Optional[
-        Tuple[Point, Point]]:
+    def get_window_pos(self, hwnd: str, wait_time: float = None, interval_time: float = None) -> Optional[Point2s]:
         """
         获取窗口位置
 
         :param hwnd: 窗口句柄
+        :param wait_time:
+        :param interval_time:
         :return:
         """
         if wait_time is None:
@@ -205,7 +206,7 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
                 continue
             else:
                 x1, y1, x2, y2 = response.split("|")
-                return Point(x=float(x1), y=float(y1)), Point(x=float(x2), y=float(y2))
+                return Point2s(Point(x=float(x1), y=float(y1)), Point(x=float(x2), y=float(y2)))
         # 超时
         return None
 
@@ -436,18 +437,8 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
         # 超时
         return None
 
-    def compare_color(self,
-                      hwnd: str,
-                      main_x: float,
-                      main_y: float,
-                      color: str,
-                      sub_colors: _SubColors = None,
-                      region: _Region = None,
-                      similarity: float = 0.9,
-                      mode: bool = False,
-                      wait_time: float = None,
-                      interval_time: float = None,
-                      raise_err: bool = None) -> Optional[Point]:
+    def compare_color(self, hwnd: str, main_x: float, main_y: float, color: str, sub_colors: _SubColors = None,
+                      region: _Region = None, similarity: float = 0.9, mode: bool = False) -> bool:
         """
         比较指定坐标点的颜色值
 
@@ -459,21 +450,9 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
         :param region: 截图区域，默认全屏，``region = (起点x、起点y、终点x、终点y)``，得到一个矩形
         :param similarity: 相似度，0-1 的浮点数，默认 0.9；
         :param mode: 操作模式，后台 true，前台 false, 默认前台操作；
-        :param wait_time: 等待时间，默认取 self.wait_timeout；
-        :param interval_time: 轮询间隔时间，默认取 self.interval_timeout；
-        :param raise_err: 超时是否抛出异常；
         :return: True或者 False
 
         """
-        if wait_time is None:
-            wait_time = self.wait_timeout
-
-        if interval_time is None:
-            interval_time = self.interval_timeout
-
-        if raise_err is None:
-            raise_err = self.raise_err
-
         if not region:
             region = [0, 0, 0, 0]
 
@@ -487,14 +466,8 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
         else:
             sub_colors_str = "null"
 
-        end_time = time.time() + wait_time
-        while time.time() < end_time:
-            return self.__send_data("compareColor", hwnd, main_x, main_y, color, sub_colors_str, *region, similarity,
-                                    mode) == "true"
-        # 超时
-        if raise_err:
-            raise TimeoutError("`compare_color` 操作超时")
-        return None
+        return self.__send_data("compareColor", hwnd, main_x, main_y, color, sub_colors_str, *region, similarity,
+                                mode) == "true"
 
     def extract_image_by_video(self, video_path: str, save_folder: str, jump_frame: int = 1) -> bool:
         """
@@ -1143,15 +1116,15 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
         """
         return self.__send_data("startProcess", cmd, show_window, is_wait) == "true"
 
-    def execute_command(self, command: str, waitTimeout: int = 300) -> str:
+    def execute_command(self, command: str, wait_timeout: int = 300) -> str:
         """
         执行cmd命令
 
         :param command: cmd命令，不能含 "cmd"字串
-        :param waitTimeout: 可选参数，等待结果返回超时，单位毫秒，默认300毫秒
+        :param wait_timeout: 可选参数，等待结果返回超时，单位毫秒，默认300毫秒
         :return: cmd执行结果
         """
-        return self.__send_data("executeCommand", command, waitTimeout)
+        return self.__send_data("executeCommand", command, wait_timeout)
 
     def download_file(self, url: str, file_path: str, is_wait: bool) -> bool:
         """
@@ -1179,13 +1152,13 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
             return None
         return json.loads(response)
 
-    def open_excel_sheet(self, excel_object: dict, sheet_name: str) -> Optional[dict]:
+    def open_excel_sheet(self, excel_object: dict, sheet_name: str) -> Optional[str]:
         """
         打开excel表格
 
         :param excel_object: excel对象
         :param sheet_name: 表名
-        :return: sheet对象或者None
+        :return:
         """
         response = self.__send_data("openExcelSheet", excel_object['book'], excel_object['path'], sheet_name)
         if response == "null":
@@ -1225,7 +1198,7 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
         """
         return self.__send_data("writeExcelStr", excel_object, row, col, str_value) == "true"
 
-    def read_excel_num(self, excel_object: dict, row: int, col: int) -> int:
+    def read_excel_num(self, excel_object: dict, row: int, col: int) -> float:
         """
         读取excel表格数字
 
@@ -1310,8 +1283,8 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
             'Content-Type': 'application/x-www-form-urlencoded'
         }
         parse_data = parse.urlencode(data).encode('utf8')
-        req = request.Request(url, parse_data, headers)
-        response = request.urlopen(req)
+        req = request_lib.Request(url, parse_data, headers)
+        response = request_lib.urlopen(req)
         result = response.read().decode()
         return json.loads(result)
 
@@ -1339,9 +1312,9 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-        parseData = parse.urlencode(data).encode('utf8')
-        req = request.Request(url, parseData, headers)
-        response = request.urlopen(req)
+        parse_data = parse.urlencode(data).encode('utf8')
+        req = request_lib.Request(url, parse_data, headers)
+        response = request_lib.urlopen(req)
         result = response.read().decode()
         return json.loads(result)
 
@@ -1367,9 +1340,9 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-        parseData = parse.urlencode(data).encode('utf8')
-        req = request.Request(url, parseData, headers)
-        response = request.urlopen(req)
+        parse_data = parse.urlencode(data).encode('utf8')
+        req = request_lib.Request(url, parse_data, headers)
+        response = request_lib.urlopen(req)
         result = response.read().decode()
         return json.loads(result)
 
@@ -1420,28 +1393,28 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
             return None
         return response
 
-    def text_to_bullhorn(self, ssmlPath_or_text: str, language: str, voice_name: str) -> bool:
+    def text_to_bullhorn(self, ssml_path_or_text: str, language: str, voice_name: str) -> bool:
         """
         文本合成音频到扬声器
 
-        :param ssmlPath_or_text: 要转换语音的文本或者".xml"格式文件路径
+        :param ssml_path_or_text: 要转换语音的文本或者".xml"格式文件路径
         :param language: 语言，参考开发文档 语言和发音人
         :param voice_name: 发音人，参考开发文档 语言和发音人
         :return: True或者False
         """
-        return self.__send_data("textToBullhorn", ssmlPath_or_text, language, voice_name) == "true"
+        return self.__send_data("textToBullhorn", ssml_path_or_text, language, voice_name) == "true"
 
-    def text_to_audio_file(self, ssmlPath_or_text: str, language: str, voice_name: str, audio_path: str) -> bool:
+    def text_to_audio_file(self, ssml_path_or_text: str, language: str, voice_name: str, audio_path: str) -> bool:
         """
         文本合成音频并保存到文件
 
-        :param ssmlPath_or_text: 要转换语音的文本或者".xml"格式文件路径
+        :param ssml_path_or_text: 要转换语音的文本或者".xml"格式文件路径
         :param language: 语言，参考开发文档 语言和发音人
         :param voice_name: 发音人，参考开发文档 语言和发音人
         :param audio_path: 保存音频文件路径
         :return: True或者False
         """
-        return self.__send_data("textToAudioFile", ssmlPath_or_text, language, voice_name, audio_path) == "true"
+        return self.__send_data("textToAudioFile", ssml_path_or_text, language, voice_name, audio_path) == "true"
 
     def microphone_translation_text(self, source_language: str, target_language: str) -> Optional[str]:
         """
@@ -1586,8 +1559,7 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
 
         :return:
         """
-        self.__send_data("closeDriver")
-        return
+        return self.__send_data("closeDriver") == "true"
 
     # ##########
     #   其他   #
@@ -1629,7 +1601,6 @@ class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
         # 如果是本地部署，则自动启动 WindowsDriver.exe
         if local:
             try:
-                print("尝试本地启动 WindowsDriver ...")
                 subprocess.Popen(["WindowsDriver.exe", "127.0.0.1", str(listen_port)])
                 print("本地启动 WindowsDriver 成功，开始执行脚本")
             except FileNotFoundError as e:
