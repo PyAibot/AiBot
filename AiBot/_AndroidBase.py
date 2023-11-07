@@ -203,7 +203,8 @@ class _AndroidBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handl
             return None
         return self.save_screenshot(image_name, region=(rect[0].x, rect[0].y, rect[1].x, rect[1].y))
 
-    def take_screenshot(self, region: _Region = None, algorithm: _Algorithm = None) -> Optional[bytes]:
+    def take_screenshot(self, region: _Region = None, algorithm: _Algorithm = None,
+                        scale: float = 1.0) -> Optional[bytes]:
         """
         保存截图，返回图像字节格式或者"null"的字节格式
 
@@ -231,6 +232,8 @@ class _AndroidBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handl
             5. ``ADAPTIVE_THRESH_MEAN_C``      算法，自适应阈值；
             6. ``ADAPTIVE_THRESH_GAUSSIAN_C``  算法，自适应阈值；
 
+        :param scale: 图片缩放率，默认为 1.0，1.0 以下为缩小，1.0 以上为放大；
+
         :return: 图像字节格式或者"null"的字节格式
 
         """
@@ -245,7 +248,7 @@ class _AndroidBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handl
                 threshold = 127
                 max_val = 255
 
-        response = self.__send_data_return_bytes("takeScreenshot", *region, algorithm_type, threshold, max_val)
+        response = self.__send_data_return_bytes("takeScreenshot", *region, algorithm_type, threshold, max_val, scale)
         if response == b'null':
             return None
         return response

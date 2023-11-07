@@ -20,9 +20,16 @@ class CustomAndroidScript(AndroidBotMain):
         # is_use_ys = params.get("110")
         # print("理智恢复次数: ", restore_count)
         # print("是否使用源石: ", is_use_ys)
-        while True:
-            time.sleep(3)
-            self.show_toast("恭喜发财")
+
+        time.sleep(5)
+        self.init_ocr_server("192.168.0.101", 9999)
+        result = self.find_text("脚本")
+        print(result)
+
+        # while True:
+        #     time.sleep(3)
+        #     self.show_toast("恭喜发财")
+
         # xpath = "com.aibot.client/android.widget.EditText@text=192.168.68.195"
         # points = self.get_element_rect(xpath)
         # result = self.press(points[0].get_points_center(points[1]), 3)
