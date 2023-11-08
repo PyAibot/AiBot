@@ -1,7 +1,7 @@
 import abc
-import os
 import socketserver
 import socket
+import time
 
 from ._AndroidBase import _AndroidBotBase
 from ._WebBase import _WebBotBase
@@ -60,5 +60,10 @@ class AndroidBotMain(_AndroidBotBase):
 
         sock.serve_forever()
 
-    def build_win_driver(self, port: int, local: bool = True) -> _WinBotBase:
+    @staticmethod
+    def build_win_driver(port: int, local: bool = True) -> _WinBotBase:
         _WinBotBase.execute(port, local=local)
+        while WIN_DRIVER is not None:
+            return WIN_DRIVER
+        else:
+            time.sleep(0.5)

@@ -2,7 +2,6 @@ import abc
 import socket
 import socketserver
 import subprocess
-import sys
 import threading
 import time
 import json
@@ -13,7 +12,7 @@ from urllib import request as request_lib, parse
 
 from loguru import logger
 
-from ._utils import _protect, Point, _Region, _Algorithm, _SubColors, Point2s
+from ._utils import _protect, Point, _Region, _Algorithm, _SubColors, Point2s, Log_Format
 
 
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
@@ -23,29 +22,22 @@ class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
 
 class _WinBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
     raise_err = False
-
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
 
-    log_path = ""
+    log_storage = False
     log_level = "INFO"
-    log_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
-                 "<level>{level: <8}</level> | " \
-                 "{thread.name: <8} | " \
-                 "<cyan>{module}.{function}:{line}</cyan> | " \
-                 "<level>{message}</level>"  # 日志内容
+    log_size = 10  # MB
+
+    log = logger
+
+    if log_storage:
+        log.add("./runtime.log", level=log_level.upper(), format=Log_Format,
+                rotation=f'{log_size} MB',
+                retention='0 days')
 
     def __init__(self, request, client_address, server):
         self._lock = threading.Lock()
-        self.log = logger
-
-        self.log.remove()
-        self.log.add(sys.stdout, level=self.log_level.upper(), format=self.log_format)
-
-        if self.log_path:
-            self.log.add(self.log_path, level=self.log_level.upper(), format=self.log_format,
-                         rotation='5 MB', retention='2 days')
-
         super().__init__(request, client_address, server)
 
     def __send_data(self, *args) -> str:

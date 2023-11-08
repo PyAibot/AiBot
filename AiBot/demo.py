@@ -1,51 +1,77 @@
+import json
+import random
 import socket
+import subprocess
 import sys
 
 from loguru import logger
 
+from AiBot._utils import Log_Format
 
-class WebBotMain:
+
+class WebBotBase:
+    raise_err = False
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
 
-    log_path = ""
-    log_level = "DEBUG"
-    log_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
-                 "<level>{level: <8}</level> | " \
-                 "{thread.name: <8} | " \
-                 "<cyan>{module}.{function}:{line}</cyan> | " \
-                 "<level>{message}</level>"  # 日志内容
+    log_storage = False
+    log_level = "INFO"
+    log_size = 10  # MB
+
+    log = logger
+
+    if log_storage:
+        log.add("./runtime.log", level=log_level.upper(), format=Log_Format,
+                rotation=f'{log_size} MB',
+                retention='0 days')
 
     def __init__(self, port):
-        self.log = logger
-
-        self.log.remove()
-        self.log.add(sys.stdout, level=self.log_level.upper(), format=self.log_format)
-
-        if self.log_path:
-            self.log.add(self.log_path, level=self.log_level.upper(), rotation="12:00", retention="15 days",
-                         format=self.log_format)
-
-        address_info = socket.getaddrinfo("127.0.0.1", port, socket.AF_INET, socket.SOCK_STREAM)[0]
+        address_info = socket.getaddrinfo(None, port, socket.AF_INET, socket.SOCK_STREAM)[0]
         family, socket_type, proto, _, socket_address = address_info
         self.__sock = socket.socket(family, socket_type, proto)
-        self.__sock.connect(socket_address)
+        self.__sock.listen(1)
+        connection, client_address = self.__sock.accept()
 
     @classmethod
-    def build(cls, host: str, port: int, browser: str, debug_port=0, user_data_dir="./UserData", browser_path=None,
-              argument=None) -> "WebBotMain":
+    def build(cls, listen_port: int, local: bool = True, driver_params: dict = None) -> "WebBotBase":
         """
-        :param host: webDriver服务地址。假如值为 "127.0.0.1"脚本会自动启动WebDriver.exe，如果是远程服务地址，用户需要手动启动WebDriver.exe 并且提供启动参数。
-        :param port: 端口
-        :param browser: 浏览器名称 "edge"和"chrome"，其他chromium内核浏览器需要指定browserPath参数
-        :param debug_port: 调试端口。默认 0 随机端口。指定端口则接管已打开的浏览器。启动浏览应指定的参数 --remote-debugging-port=19222 --user-data-dir=C:\\Users\\电脑用户名\\AppData\\Local\\Google\\Chrome\\User Data
-        :param user_data_dir: 用户数据目录,默认./UserData。多进程同时操作多个浏览器数据目录不能相同
-        :param browser_path: 浏览器路径
-        :param argument: 浏览器启动参数。例如：无头模式: --headless   设置代理：--proxy-server=127.0.0.1:8080
+        :param listen_port: 脚本监听的端口
+        :param local: 脚本是否部署在本地
+        :param driver_params: Web 驱动启动参数
         :return:
         """
-        # subprocess.Popen(["WindowsDriver.exe", str(port)])
-        return WebBotMain(port)
+        if listen_port < 0 or listen_port > 65535:
+            raise OSError("`listen_port` must be in 0-65535.")
+        print("启动服务...")
+        # 获取 IPv4 可用地址
+        address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
+            0]
+        *_, socket_address = address_info
+
+        # 如果是本地部署，则自动启动 WebDriver.exe
+        if local:
+            default_params = {
+                "serverIp": "127.0.0.1",
+                "serverPort": listen_port,
+                "browserName": "chrome",
+                "debugPort": 0,
+                "userDataDir": f"./UserData{random.randint(100000, 999999)}",
+                "browserPath": None,
+                "argument": None,
+            }
+            if driver_params:
+                default_params.update(driver_params)
+            default_params = json.dumps(default_params)
+            try:
+                subprocess.Popen(["WebDriver.exe", default_params])
+                print("本地启动 WebDriver 成功，开始执行脚本")
+            except FileNotFoundError as e:
+                err_msg = "\n异常排除步骤：\n1. 检查 Aibote.exe 路径是否存在中文；\n2. 是否启动 Aibote.exe 初始化环境变量；\n3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；\n4. 首次初始化环境变量后，是否重启开发工具；\n5. 是否以管理员权限启动开发工具；\n"
+                print("\033[92m", err_msg, "\033[0m")
+                raise e
+        else:
+            print("等待驱动连接...")
+        return WebBotBase(port)
 
     def __send_data(self, *args) -> str:
         args_len = ""

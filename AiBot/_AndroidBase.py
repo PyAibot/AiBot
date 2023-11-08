@@ -53,7 +53,6 @@ class _AndroidBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handl
 
     def __init__(self, request, client_address, server):
         self._lock = threading.Lock()
-
         super().__init__(request, client_address, server)
 
     def __send_data_return_bytes(self, *args) -> bytes:
