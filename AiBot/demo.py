@@ -28,9 +28,9 @@ class WebBotBase:
     def __init__(self, port):
         address_info = socket.getaddrinfo(None, port, socket.AF_INET, socket.SOCK_STREAM)[0]
         family, socket_type, proto, _, socket_address = address_info
-        self.__sock = socket.socket(family, socket_type, proto)
-        self.__sock.listen(1)
-        connection, client_address = self.__sock.accept()
+        server = socket.socket(family, socket_type, proto)
+        server.listen(1)
+        self.__socket, self.client_address = server.accept()
 
     @classmethod
     def build(cls, listen_port: int, local: bool = True, driver_params: dict = None) -> "WebBotBase":
@@ -42,11 +42,6 @@ class WebBotBase:
         """
         if listen_port < 0 or listen_port > 65535:
             raise OSError("`listen_port` must be in 0-65535.")
-        print("启动服务...")
-        # 获取 IPv4 可用地址
-        address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
-            0]
-        *_, socket_address = address_info
 
         # 如果是本地部署，则自动启动 WebDriver.exe
         if local:
@@ -71,7 +66,7 @@ class WebBotBase:
                 raise e
         else:
             print("等待驱动连接...")
-        return WebBotBase(port)
+        return WebBotBase(listen_port)
 
     def __send_data(self, *args) -> str:
         args_len = ""
