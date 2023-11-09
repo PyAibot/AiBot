@@ -9,7 +9,7 @@ import threading
 from AiBot._WebBase import _WebBotBase
 from AiBot._WinBase import _WinBotBase
 from AiBot._AndroidBase import _AndroidBotBase
-from AiBot._utils import _protect, _ThreadingTCPServer
+from AiBot._utils import _protect, _ThreadingTCPServer, get_local_ip
 
 
 class WebBotMain(socketserver.BaseRequestHandler, _WebBotBase, metaclass=_protect("handle", "execute")):
@@ -45,6 +45,9 @@ class WebBotMain(socketserver.BaseRequestHandler, _WebBotBase, metaclass=_protec
             0]
         *_, socket_address = address_info
 
+        # 获取局域网 IP
+        local_ip = get_local_ip()
+
         # 如果是本地部署，则自动启动 WebDriver.exe
         if local:
             default_params = {
@@ -66,10 +69,10 @@ class WebBotMain(socketserver.BaseRequestHandler, _WebBotBase, metaclass=_protec
                 err_msg = "\n异常排除步骤：\n1. 检查 Aibote.exe 路径是否存在中文；\n2. 是否启动 Aibote.exe 初始化环境变量；\n3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；\n4. 首次初始化环境变量后，是否重启开发工具；\n5. 是否以管理员权限启动开发工具；\n"
                 print("\033[92m", err_msg, "\033[0m")
                 raise e
-        else:
-            print("等待驱动连接...")
+
         # 启动 Socket 服务
         sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
+        print(f"Server stared on {local_ip}:{socket_address[1]}")
         sock.serve_forever()
 
     @staticmethod

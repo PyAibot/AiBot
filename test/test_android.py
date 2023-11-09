@@ -8,10 +8,10 @@ class CustomAndroidScript(AndroidBotMain):
     log_level = "DEBUG"
 
     def script_main(self):
-        win_driver = self.build_win_driver(13366, True)
-        print("win_driver", win_driver)
+        # win_driver = self.build_win_driver(13366, True)
+        # print("win_driver", win_driver)
 
-        # self.show_toast("连接成功")
+        self.show_toast("连接成功")
         # self.create_text_view(90, "配置参数：", 0, 0)
         # self.create_edit_view(100, "理智恢复次数", 0, 60)
         # self.create_check_box(110, "是否使用源石", 500, 120)
@@ -21,14 +21,14 @@ class CustomAndroidScript(AndroidBotMain):
         # print("理智恢复次数: ", restore_count)
         # print("是否使用源石: ", is_use_ys)
 
-        time.sleep(5)
-        self.init_ocr_server("192.168.0.101", 9999)
-        result = self.find_text("脚本")
-        print(result)
+        # time.sleep(5)
+        # self.init_ocr_server("192.168.0.101", 9999)
+        # result = self.find_text("脚本")
+        # print(result)
 
-        # while True:
-        #     time.sleep(3)
-        #     self.show_toast("恭喜发财")
+        while True:
+            time.sleep(5)
+            self.show_toast("恭喜发财")
 
         # xpath = "com.aibot.client/android.widget.EditText@text=192.168.68.195"
         # points = self.get_element_rect(xpath)

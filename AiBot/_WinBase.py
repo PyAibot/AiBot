@@ -36,7 +36,7 @@ class _WinBotBase:
         server = socket.socket(family, socket_type, proto)
         server.listen(1)
         print("WinSocket服务启动成功，等待客户端链接...")
-        self.__sock, self.client_address = server.accept()
+        self.request, self.client_address = server.accept()
         print("客户端链接成功")
 
     @classmethod
@@ -86,13 +86,13 @@ class _WinBotBase:
         try:
             with self._lock:
                 self.log.debug(rf"->-> {data}")
-                self.__sock.sendall(data)
-                response = self.__sock.recv(65535)
+                self.request.sendall(data)
+                response = self.request.recv(65535)
                 if response == b"":
                     raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
                 data_length, data = response.split(b"/", 1)
                 while int(data_length) > len(data):
-                    data += self.__sock.recv(65535)
+                    data += self.request.recv(65535)
                 self.log.debug(rf"<-<- {data}")
 
             return data.decode("utf8").strip()

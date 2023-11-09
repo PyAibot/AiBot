@@ -7,14 +7,13 @@ import threading
 from AiBot._AndroidBase import _AndroidBotBase
 from AiBot._WebBase import _WebBotBase
 from AiBot._WinBase import _WinBotBase
-from AiBot._utils import _protect, _ThreadingTCPServer
+from AiBot._utils import _protect, _ThreadingTCPServer, get_local_ip
 
 
 class WinBotMain(socketserver.BaseRequestHandler, _WinBotBase, metaclass=_protect("handle", "execute")):
     def __init__(self, request, client_address, server):
-        super().__init__(request, client_address, server)
         self._lock = threading.Lock()
-        self.__sock = request
+        super().__init__(request, client_address, server)
 
     def handle(self) -> None:
         self.script_main()
@@ -36,11 +35,14 @@ class WinBotMain(socketserver.BaseRequestHandler, _WinBotBase, metaclass=_protec
 
         if listen_port < 0 or listen_port > 65535:
             raise OSError("`listen_port` must be in 0-65535.")
-        print("启动服务...")
+
         # 获取 IPv4 可用地址
         address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
             0]
         *_, socket_address = address_info
+
+        # 获取局域网 IP
+        local_ip = get_local_ip()
 
         # 如果是本地部署，则自动启动 WindowsDriver.exe
         if local:
@@ -56,6 +58,7 @@ class WinBotMain(socketserver.BaseRequestHandler, _WinBotBase, metaclass=_protec
 
         # 启动 Socket 服务
         sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
+        print(f"Server stared on {local_ip}:{socket_address[1]}")
         sock.serve_forever()
 
     @staticmethod

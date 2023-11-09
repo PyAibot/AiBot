@@ -1,4 +1,5 @@
 import abc
+import socket
 import socketserver
 from typing import Union, Tuple, List
 
@@ -121,3 +122,22 @@ def _protect(*protected):
 class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
     daemon_threads = True
     allow_reuse_address = True
+
+
+def get_local_ip() -> str:
+    """
+    获取局域网IP
+    :return:
+    """
+    try:
+        # 创建一个UDP套接字
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # 连接外部地址（这里使用百度的DNS服务器）
+        sock.connect(('114.114.114.114', 80))
+        # 获取本地IP地址
+        local_ip = sock.getsockname()[0]
+        # 关闭套接字连接
+        sock.close()
+        return local_ip
+    except socket.error:
+        return "0.0.0.0"
