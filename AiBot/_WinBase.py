@@ -34,10 +34,10 @@ class _WinBotBase:
         address_info = socket.getaddrinfo(None, port, socket.AF_INET, socket.SOCK_STREAM)[0]
         family, socket_type, proto, _, socket_address = address_info
         server = socket.socket(family, socket_type, proto)
-        server.listen(1)
+        server.listen()
         print("WinSocket服务启动成功，等待客户端链接...")
         self.request, self.client_address = server.accept()
-        print("客户端链接成功")
+        print("WinSocket客户端链接成功")
 
     @classmethod
     def _build(cls, listen_port: int, local: bool = True) -> "_WinBotBase":
@@ -49,8 +49,6 @@ class _WinBotBase:
         if listen_port < 0 or listen_port > 65535:
             raise OSError("`listen_port` must be in 0-65535.")
 
-        win_driver = _WinBotBase(listen_port)
-
         # 如果是本地部署，则自动启动 WindowsDriver.exe
         if local:
             try:
@@ -60,10 +58,8 @@ class _WinBotBase:
                 err_msg = "\n异常排除步骤：\n1. 检查 Aibote.exe 路径是否存在中文；\n2. 是否启动 Aibote.exe 初始化环境变量；\n3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；\n4. 首次初始化环境变量后，是否重启开发工具；\n5. 是否以管理员权限启动开发工具；\n"
                 print("\033[92m", err_msg, "\033[0m")
                 raise e
-        else:
-            print("等待 WindowsDriver 客户端连接...")
 
-        return win_driver
+        return _WinBotBase(listen_port)
 
     def __send_data(self, *args) -> str:
         args_len = ""

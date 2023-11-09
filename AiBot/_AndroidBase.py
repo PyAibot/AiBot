@@ -56,10 +56,10 @@ class _AndroidBotBase:
         address_info = socket.getaddrinfo(None, port, socket.AF_INET, socket.SOCK_STREAM)[0]
         family, socket_type, proto, _, socket_address = address_info
         server = socket.socket(family, socket_type, proto)
-        server.listen(1)
+        server.listen()
         print("AndroidSocket服务启动成功，等待客户端链接...")
         self.request, self.client_address = server.accept()
-        print("客户端链接成功")
+        print("AndroidSocket客户端链接成功")
 
     @classmethod
     def _build(cls, listen_port: int) -> "_AndroidBotBase":
