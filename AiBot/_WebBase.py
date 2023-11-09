@@ -10,7 +10,7 @@ from loguru import logger
 from ._utils import Point, _Point_Tuple, Log_Format
 
 
-class _WebBotBase:
+class WebBotBase:
     raise_err = False
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds

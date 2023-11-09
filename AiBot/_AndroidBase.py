@@ -32,7 +32,7 @@ from ._utils import _Point_Tuple, _Region, _Algorithm, _SubColors, Log_Format, P
 # logger_a = logger.bind(name="a")
 # logger_b = logger.bind(name="b")
 
-class _AndroidBotBase:
+class AndroidBotBase:
     raise_err = False
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds

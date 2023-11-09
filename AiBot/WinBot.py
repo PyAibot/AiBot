@@ -4,13 +4,16 @@ import socketserver
 import subprocess
 import threading
 
-from AiBot._AndroidBase import _AndroidBotBase
-from AiBot._WebBase import _WebBotBase
-from AiBot._WinBase import _WinBotBase
+from AiBot._AndroidBase import AndroidBotBase
+from AiBot._WebBase import WebBotBase
+from AiBot._WinBase import WinBotBase
 from AiBot._utils import _protect, _ThreadingTCPServer, get_local_ip
 
+AND_DRIVER: AndroidBotBase | None = None
+WEB_DRIVER: WebBotBase | None = None
 
-class WinBotMain(socketserver.BaseRequestHandler, _WinBotBase, metaclass=_protect("handle", "execute")):
+
+class WinBotMain(socketserver.BaseRequestHandler, WinBotBase, metaclass=_protect("handle", "execute")):
     def __init__(self, request, client_address, server):
         self._lock = threading.Lock()
         super().__init__(request, client_address, server)
@@ -61,10 +64,16 @@ class WinBotMain(socketserver.BaseRequestHandler, _WinBotBase, metaclass=_protec
         print(f"Server stared on {local_ip}:{socket_address[1]}")
         sock.serve_forever()
 
-    @staticmethod
-    def build_android_driver(listen_port: int) -> _AndroidBotBase:
-        return _AndroidBotBase._build(listen_port)
+    def build_android_driver(self, listen_port: int) -> AndroidBotBase:
+        global AND_DRIVER
+        with self._lock:
+            if AND_DRIVER is None:
+                AND_DRIVER = AndroidBotBase._build(listen_port)
+        return AND_DRIVER
 
-    @staticmethod
-    def build_web_driver(listen_port: int, local: bool = True, driver_params: dict = None) -> _WebBotBase:
-        return _WebBotBase._build(listen_port, local, driver_params)
+    def build_web_driver(self, listen_port: int, local: bool = True, driver_params: dict = None) -> WebBotBase:
+        global WEB_DRIVER
+        with self._lock:
+            if WEB_DRIVER is None:
+                WEB_DRIVER = WebBotBase._build(listen_port, local, driver_params)
+        return WEB_DRIVER

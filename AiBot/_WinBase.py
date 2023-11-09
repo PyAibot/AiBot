@@ -13,7 +13,7 @@ from loguru import logger
 from ._utils import Point, _Region, _Algorithm, _SubColors, Point2s, Log_Format
 
 
-class _WinBotBase:
+class WinBotBase:
     raise_err = False
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
