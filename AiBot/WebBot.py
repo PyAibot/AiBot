@@ -78,16 +78,29 @@ class WebBotMain(socketserver.BaseRequestHandler, WebBotBase, metaclass=_protect
         print(f"Server stared on {local_ip}:{socket_address[1]}")
         sock.serve_forever()
 
-    def build_android_driver(self, listen_port: int) -> AndroidBotBase:
+    def build_android_driver(self, listen_port: int, new_driver=False) -> AndroidBotBase:
+        """
+        构建 android driver
+
+        :param listen_port: Android 脚本要监听的端口
+        :param new_driver: 是否强制获取新的 Android 脚本驱动
+        """
         global AND_DRIVER
         with self._lock:
-            if AND_DRIVER is None:
+            if AND_DRIVER is None or new_driver:
                 AND_DRIVER = AndroidBotBase._build(listen_port)
         return AND_DRIVER
 
-    def build_win_driver(self, listen_port: int, local: bool = True) -> WinBotBase:
+    def build_win_driver(self, listen_port: int, local: bool = True, new_driver=False) -> WinBotBase:
+        """
+        构建 win driver
+
+        :param listen_port: Win 脚本要监听的端口
+        :param local: 脚本是否部署在本地
+        :param new_driver: 是否强制获取新的 Win 脚本驱动
+        """
         global WIN_DRIVER
         with self._lock:
-            if WIN_DRIVER is None:
+            if WIN_DRIVER is None or new_driver:
                 WIN_DRIVER = WinBotBase._build(listen_port, local)
         return WIN_DRIVER
