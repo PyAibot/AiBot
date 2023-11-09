@@ -1,23 +1,16 @@
-import abc
 import json
 import random
 import socket
-import socketserver
 import subprocess
 import threading
 from typing import Optional, Tuple, Any, Literal
 
 from loguru import logger
 
-from ._utils import _protect, Point, _Point_Tuple, Log_Format
+from ._utils import Point, _Point_Tuple, Log_Format
 
 
-class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
-    daemon_threads = True
-    allow_reuse_address = True
-
-
-class _WebBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
+class _WebBotBase:
     raise_err = False
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
@@ -33,9 +26,52 @@ class _WebBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
                 rotation=f'{log_size} MB',
                 retention='0 days')
 
-    def __init__(self, request, client_address, server):
+    def __init__(self, port):
         self._lock = threading.Lock()
-        super().__init__(request, client_address, server)
+        address_info = socket.getaddrinfo(None, port, socket.AF_INET, socket.SOCK_STREAM)[0]
+        family, socket_type, proto, _, socket_address = address_info
+        server = socket.socket(family, socket_type, proto)
+        server.listen(1)
+        print("WebSocket服务启动成功，等待客户端链接...")
+        self.__sock, self.client_address = server.accept()
+        print("客户端链接成功")
+
+    @classmethod
+    def build(cls, listen_port: int, local: bool = True, driver_params: dict = None) -> "_WebBotBase":
+        """
+        :param listen_port: 脚本监听的端口
+        :param local: 脚本是否部署在本地
+        :param driver_params: Web 驱动启动参数
+        :return:
+        """
+        if listen_port < 0 or listen_port > 65535:
+            raise OSError("`listen_port` must be in 0-65535.")
+
+        web_driver = _WebBotBase(listen_port)
+        # 如果是本地部署，则自动启动 WebDriver.exe
+        if local:
+            default_params = {
+                "serverIp": "127.0.0.1",
+                "serverPort": listen_port,
+                "browserName": "chrome",
+                "debugPort": 0,
+                "userDataDir": f"./UserData{random.randint(100000, 999999)}",
+                "browserPath": None,
+                "argument": None,
+            }
+            if driver_params:
+                default_params.update(driver_params)
+            default_params = json.dumps(default_params)
+            try:
+                subprocess.Popen(["WebDriver.exe", default_params])
+                print("本地 WebDriver 客户端启动成功")
+            except FileNotFoundError as e:
+                err_msg = "\n异常排除步骤：\n1. 检查 Aibote.exe 路径是否存在中文；\n2. 是否启动 Aibote.exe 初始化环境变量；\n3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；\n4. 首次初始化环境变量后，是否重启开发工具；\n5. 是否以管理员权限启动开发工具；\n"
+                print("\033[92m", err_msg, "\033[0m")
+                raise e
+        else:
+            print("等待 WebDriver 客户端连接...")
+        return web_driver
 
     def __send_data(self, *args) -> str:
         args_len = ""
@@ -58,13 +94,13 @@ class _WebBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
         try:
             with self._lock:
                 self.log.debug(rf"->>> {data}")
-                self.request.sendall(data)
-                response = self.request.recv(65535)
+                self.__sock.sendall(data)
+                response = self.__sock.recv(65535)
                 if response == b"":
                     raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接。")
                 data_length, data = response.split(b"/", 1)
                 while int(data_length) > len(data):
-                    data += self.request.recv(65535)
+                    data += self.__sock.recv(65535)
                 self.log.debug(rf"<<<- {data}")
 
             return data.decode("utf8").strip()
@@ -658,68 +694,3 @@ class _WebBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", 
         :return:
         """
         return self.__send_data("closeDriver") == "true"
-
-    ############
-    #   其他   #
-    ############
-    def handle(self) -> None:
-        # 设置阻塞模式
-        # self.request.setblocking(False)
-
-        # 设置缓冲区
-        # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65535)
-        self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024 * 1024)  # 发送缓冲区 10M
-
-        # 执行脚本
-        self.script_main()
-
-    @abc.abstractmethod
-    def script_main(self):
-        """脚本入口，由子类重写
-        """
-
-    @classmethod
-    def execute(cls, listen_port: int, local: bool = True, driver_params: dict = None):
-        """
-        多线程启动 Socket 服务
-
-        :param listen_port: 脚本监听的端口
-        :param local: 脚本是否部署在本地
-        :param driver_params: Web 驱动启动参数
-        :return:
-        """
-
-        if listen_port < 0 or listen_port > 65535:
-            raise OSError("`listen_port` must be in 0-65535.")
-        print("启动服务...")
-        # 获取 IPv4 可用地址
-        address_info = socket.getaddrinfo(None, listen_port, socket.AF_INET, socket.SOCK_STREAM, 0, socket.AI_PASSIVE)[
-            0]
-        *_, socket_address = address_info
-
-        # 如果是本地部署，则自动启动 WebDriver.exe
-        if local:
-            default_params = {
-                "serverIp": "127.0.0.1",
-                "serverPort": listen_port,
-                "browserName": "chrome",
-                "debugPort": 0,
-                "userDataDir": f"./UserData{random.randint(100000, 999999)}",
-                "browserPath": None,
-                "argument": None,
-            }
-            if driver_params:
-                default_params.update(driver_params)
-            default_params = json.dumps(default_params)
-            try:
-                subprocess.Popen(["WebDriver.exe", default_params])
-                print("本地启动 WebDriver 成功，开始执行脚本")
-            except FileNotFoundError as e:
-                err_msg = "\n异常排除步骤：\n1. 检查 Aibote.exe 路径是否存在中文；\n2. 是否启动 Aibote.exe 初始化环境变量；\n3. 检查电脑环境变量是否初始化成功，环境变量中是否存在 %Aibote% 开头的；\n4. 首次初始化环境变量后，是否重启开发工具；\n5. 是否以管理员权限启动开发工具；\n"
-                print("\033[92m", err_msg, "\033[0m")
-                raise e
-        else:
-            print("等待驱动连接...")
-        # 启动 Socket 服务
-        sock = _ThreadingTCPServer(socket_address, cls, bind_and_activate=True)
-        sock.serve_forever()

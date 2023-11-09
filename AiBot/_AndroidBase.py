@@ -1,5 +1,5 @@
 import json
-import socketserver
+import socket
 import threading
 import time
 from ast import literal_eval
@@ -8,7 +8,7 @@ from typing import Optional, Dict, List
 
 from loguru import logger
 
-from ._utils import _protect, _Point_Tuple, _Region, _Algorithm, _SubColors, Log_Format, Point, Point2s
+from ._utils import _Point_Tuple, _Region, _Algorithm, _SubColors, Log_Format, Point, Point2s
 
 
 # _LOG_PATH = Path(__file__).parent.resolve() / "logs"
@@ -32,7 +32,7 @@ from ._utils import _protect, _Point_Tuple, _Region, _Algorithm, _SubColors, Log
 # logger_a = logger.bind(name="a")
 # logger_b = logger.bind(name="b")
 
-class _AndroidBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handle", "execute")):
+class _AndroidBotBase:
     raise_err = False
     wait_timeout = 3  # seconds
     interval_timeout = 0.5  # seconds
@@ -51,9 +51,26 @@ class _AndroidBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handl
     # 基础存储路径
     _base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"
 
-    def __init__(self, request, client_address, server):
+    def __init__(self, port):
         self._lock = threading.Lock()
-        super().__init__(request, client_address, server)
+        address_info = socket.getaddrinfo(None, port, socket.AF_INET, socket.SOCK_STREAM)[0]
+        family, socket_type, proto, _, socket_address = address_info
+        server = socket.socket(family, socket_type, proto)
+        server.listen(1)
+        print("AndroidSocket服务启动成功，等待客户端链接...")
+        self.__sock, self.client_address = server.accept()
+        print("客户端链接成功")
+
+    @classmethod
+    def build(cls, listen_port: int) -> "_AndroidBotBase":
+        """
+        :param listen_port: 脚本监听的端口
+        :return:
+        """
+        if listen_port < 0 or listen_port > 65535:
+            raise OSError("`listen_port` must be in 0-65535.")
+
+        return _AndroidBotBase(listen_port)
 
     def __send_data_return_bytes(self, *args) -> bytes:
         args_len = ""
@@ -68,13 +85,13 @@ class _AndroidBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handl
         try:
             with self._lock:
                 self.log.debug(rf"---> {data}")
-                self.request.sendall(data)
-                response = self.request.recv(65535)
+                self.__sock.sendall(data)
+                response = self.__sock.recv(65535)
                 if response == b"":
                     raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接")
                 data_length, data = response.split(b"/", 1)
                 while int(data_length) > len(data):
-                    data += self.request.recv(65535)
+                    data += self.__sock.recv(65535)
                 self.log.debug(rf"<--- {data}")
         except Exception as e:
             self.log.error("send/read tcp data error: " + str(e))
@@ -101,13 +118,13 @@ class _AndroidBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handl
 
         with self._lock:
             self.log.debug(rf"---> {bytes_data}")
-            self.request.sendall(bytes_data)
-            response = self.request.recv(65535)
+            self.__sock.sendall(bytes_data)
+            response = self.__sock.recv(65535)
             if response == b"":
                 raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接")
             data_length, data = response.split(b"/", 1)
             while int(data_length) > len(data):
-                data += self.request.recv(65535)
+                data += self.__sock.recv(65535)
             self.log.debug(rf"<--- {data}")
 
         return data.decode("utf8").strip()
@@ -125,13 +142,13 @@ class _AndroidBotBase(socketserver.BaseRequestHandler, metaclass=_protect("handl
 
         with self._lock:
             self.log.debug(rf"---> {data}")
-            self.request.sendall(data)
-            response = self.request.recv(65535)
+            self.__sock.sendall(data)
+            response = self.__sock.recv(65535)
             if response == b"":
                 raise ConnectionAbortedError(f"{self.client_address[0]}:{self.client_address[1]} 客户端断开链接")
             data_length, data = response.split(b"/", 1)
             while int(data_length) > len(data):
-                data += self.request.recv(65535)
+                data += self.__sock.recv(65535)
             self.log.debug(rf"<--- {data}")
 
         return data

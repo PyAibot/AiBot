@@ -1,4 +1,5 @@
 import abc
+import socketserver
 from typing import Union, Tuple, List
 
 Log_Format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
@@ -115,3 +116,8 @@ def _protect(*protected):
             return super().__new__(mcs, name, bases, namespace)
 
     return Protect
+
+
+class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
+    daemon_threads = True
+    allow_reuse_address = True

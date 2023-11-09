@@ -1,34 +1,21 @@
 import abc
 import socketserver
 import socket
-import time
+import threading
 
 from ._AndroidBase import _AndroidBotBase
 from ._WebBase import _WebBotBase
 from ._WinBase import _WinBotBase
-
-WIN_DRIVER: _WinBotBase | None = None
-WEB_DRIVER: _WebBotBase | None = None
+from ._utils import _protect, _ThreadingTCPServer
 
 
-class _ThreadingTCPServer(socketserver.ThreadingTCPServer):
-    daemon_threads = True
-    allow_reuse_address = True
+class AndroidBotMain(socketserver.BaseRequestHandler, _AndroidBotBase, metaclass=_protect("handle", "execute")):
+    def __init__(self, request, client_address, server):
+        super().__init__(request, client_address, server)
+        self._lock = threading.Lock()
+        self.__sock = request
 
-
-class AndroidBotMain(_AndroidBotBase):
-    # ##########
-    #   其他   #
-    ############
     def handle(self) -> None:
-        # 设置阻塞模式
-        # self.request.setblocking(False)
-
-        # 设置缓冲区
-        # self.request.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65535)
-        self.request.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1024 * 1024)  # 发送缓冲区 10M
-
-        # 执行脚本
         self.script_main()
 
     @abc.abstractmethod
@@ -61,9 +48,9 @@ class AndroidBotMain(_AndroidBotBase):
         sock.serve_forever()
 
     @staticmethod
-    def build_win_driver(port: int, local: bool = True) -> _WinBotBase:
-        _WinBotBase.execute(port, local=local)
-        while WIN_DRIVER is not None:
-            return WIN_DRIVER
-        else:
-            time.sleep(0.5)
+    def build_web_driver(listen_port: int, local: bool = True, driver_params: dict = None) -> _WebBotBase:
+        return _WebBotBase.build(listen_port, local, driver_params)
+
+    @staticmethod
+    def build_win_driver(listen_port: int, local: bool = True) -> _WinBotBase:
+        return _WinBotBase.build(listen_port, local)
