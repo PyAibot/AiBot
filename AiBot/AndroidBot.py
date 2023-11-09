@@ -2,6 +2,7 @@ import abc
 import socketserver
 import socket
 import threading
+import time
 
 from ._AndroidBase import AndroidBotBase
 from ._WebBase import WebBotBase
@@ -18,6 +19,17 @@ class AndroidBotMain(socketserver.BaseRequestHandler, AndroidBotBase, metaclass=
         super().__init__(request, client_address, server)
 
     def handle(self) -> None:
+        # def heart_check():
+        #     try:
+        #         while True:
+        #             time.sleep(5)
+        #             self.get_android_id()
+        #     except Exception:
+        #         self.log.error("心跳检测中断")
+        #
+        # t = threading.Thread(target=heart_check)
+        # t.join()
+        # t.start()
         self.script_main()
 
     @abc.abstractmethod
