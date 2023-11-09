@@ -60,8 +60,8 @@ class WinBotMain(socketserver.BaseRequestHandler, _WinBotBase, metaclass=_protec
 
     @staticmethod
     def build_android_driver(listen_port: int) -> _AndroidBotBase:
-        return _AndroidBotBase.build(listen_port)
+        return _AndroidBotBase._build(listen_port)
 
     @staticmethod
     def build_web_driver(listen_port: int, local: bool = True, driver_params: dict = None) -> _WebBotBase:
-        return _WebBotBase.build(listen_port, local, driver_params)
+        return _WebBotBase._build(listen_port, local, driver_params)

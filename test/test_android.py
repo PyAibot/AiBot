@@ -9,7 +9,7 @@ class CustomAndroidScript(AndroidBotMain):
 
     def script_main(self):
         win_driver = self.build_win_driver(13366, True)
-        win_driver.get_element_rect()
+        print("win_driver", win_driver)
 
         # self.show_toast("连接成功")
         # self.create_text_view(90, "配置参数：", 0, 0)
@@ -59,4 +59,4 @@ class CustomAndroidScript(AndroidBotMain):
 
 if __name__ == '__main__':
     # 监听 3333 号端口
-    CustomAndroidScript.execute(3333, multi=100)
+    CustomAndroidScript.execute(3333)

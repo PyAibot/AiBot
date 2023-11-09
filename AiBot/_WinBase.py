@@ -40,7 +40,7 @@ class _WinBotBase:
         print("客户端链接成功")
 
     @classmethod
-    def build(cls, listen_port: int, local: bool = True) -> "_WinBotBase":
+    def _build(cls, listen_port: int, local: bool = True) -> "_WinBotBase":
         """
         :param listen_port: 脚本监听的端口
         :param local: 脚本是否部署在本地

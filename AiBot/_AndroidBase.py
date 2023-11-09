@@ -62,7 +62,7 @@ class _AndroidBotBase:
         print("客户端链接成功")
 
     @classmethod
-    def build(cls, listen_port: int) -> "_AndroidBotBase":
+    def _build(cls, listen_port: int) -> "_AndroidBotBase":
         """
         :param listen_port: 脚本监听的端口
         :return:
