@@ -38,7 +38,7 @@ class WebBotBase:
         print("WebSocket客户端链接成功")
 
     @classmethod
-    def _build(cls, listen_port: int, local: bool = True, driver_params: dict = None) -> "_WebBotBase":
+    def _build(cls, listen_port: int, local: bool = True, driver_params: dict = None) -> "WebBotBase":
         """
         :param listen_port: 脚本监听的端口
         :param local: 脚本是否部署在本地
@@ -70,7 +70,7 @@ class WebBotBase:
                 print("\033[92m", err_msg, "\033[0m")
                 raise e
 
-        return _WebBotBase(listen_port)
+        return WebBotBase(listen_port)
 
     def __send_data(self, *args) -> str:
         args_len = ""

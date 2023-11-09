@@ -41,7 +41,7 @@ class WinBotBase:
         print("WinSocket客户端链接成功")
 
     @classmethod
-    def _build(cls, listen_port: int, local: bool = True) -> "_WinBotBase":
+    def _build(cls, listen_port: int, local: bool = True) -> "WinBotBase":
         """
         :param listen_port: 脚本监听的端口
         :param local: 脚本是否部署在本地
@@ -60,7 +60,7 @@ class WinBotBase:
                 print("\033[92m", err_msg, "\033[0m")
                 raise e
 
-        return _WinBotBase(listen_port)
+        return WinBotBase(listen_port)
 
     def __send_data(self, *args) -> str:
         args_len = ""

@@ -63,7 +63,7 @@ class AndroidBotBase:
         print("AndroidSocket客户端链接成功")
 
     @classmethod
-    def _build(cls, listen_port: int) -> "_AndroidBotBase":
+    def _build(cls, listen_port: int) -> "AndroidBotBase":
         """
         :param listen_port: 脚本监听的端口
         :return:
@@ -71,7 +71,7 @@ class AndroidBotBase:
         if listen_port < 0 or listen_port > 65535:
             raise OSError("`listen_port` must be in 0-65535.")
 
-        return _AndroidBotBase(listen_port)
+        return AndroidBotBase(listen_port)
 
     def __send_data_return_bytes(self, *args) -> bytes:
         args_len = ""
