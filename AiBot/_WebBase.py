@@ -416,7 +416,7 @@ class WebBotBase:
         :param vk: 输入内容
         :return:
         """
-        return self.__send_data("sendKeys", vk) == "true"
+        return self.__send_data("sendVk", vk) == "true"
 
     ###########
     # 键鼠操作 #

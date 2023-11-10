@@ -1199,7 +1199,7 @@ class AndroidBotBase:
 
         :return:
         """
-        return self.__send_data("get_identifier")
+        return self.__send_data("getIdentifier")
 
     def get_title(self) -> str:
         """
@@ -1399,6 +1399,33 @@ class AndroidBotBase:
 
         return self.__send_data("existsAndroidFile", remote_path) == "true"
 
+    def get_android_sub_files(self, android_directory) -> List[str]:
+        """
+        获取文件夹内的所有文件(不包含深层子目录)
+
+        :param android_directory: 安卓目录
+        :return:
+        """
+        if not android_directory.startswith("/storage/emulated/0/"):
+            android_directory = "/storage/emulated/0/" + android_directory
+
+        response = self.__send_data("getAndroidSubFiles", android_directory)
+        if response == "null" or response == "":
+            return []
+        return response.split("|")
+
+    def make_android_dir(self, android_directory: str) -> bool:
+        """
+        创建安卓文件夹
+
+        :param android_directory: 安卓目录
+        :return:
+        """
+        if not android_directory.startswith("/storage/emulated/0/"):
+            android_directory = "/storage/emulated/0/" + android_directory
+
+        return self.__send_data("makeAndroidDir", android_directory) == "true"
+
     def back(self) -> bool:
         """
         返回
@@ -1422,6 +1449,14 @@ class AndroidBotBase:
         :return:
         """
         return self.__send_data("recents") == "true"
+
+    def power_dialog(self) -> bool:
+        """
+        打开 开/关机 对话框，基于无障碍权限
+
+        :return:
+        """
+        return self.__send_data("powerDialog") == "true"
 
     def open_uri(self, uri: str) -> bool:
         """
@@ -1515,7 +1550,7 @@ class AndroidBotBase:
         :param height:  控件高度，默认 60
         :return:
         """
-        return self.__send_data("createTextView", _id, text, x, y, width, height)
+        return self.__send_data("createTextView", _id, text, x, y, width, height) == "true"
 
     def create_edit_view(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 150):
         """
@@ -1529,9 +1564,9 @@ class AndroidBotBase:
         :param height:  控件高度，默认 150
         :return:
         """
-        return self.__send_data("createEditText", _id, text, x, y, width, height)
+        return self.__send_data("createEditText", _id, text, x, y, width, height) == "true"
 
-    def create_check_box(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
+    def create_check_box(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60, is_select: bool = False):
         """
         创建复选框控件
 
@@ -1541,9 +1576,25 @@ class AndroidBotBase:
         :param y:  控件在屏幕上y坐标
         :param width:  控件宽度，默认 400
         :param height:  控件高度，默认 60
+        :param is_select:  是否勾选，默认 False
         :return:
         """
-        return self.__send_data("createCheckBox", _id, text, x, y, width, height)
+        return self.__send_data("createCheckBox", _id, text, x, y, width, height, is_select) == "true"
+
+    def create_list_text(self, _id: int, hint_text: str, x: int, y: int, width: int, height: int, list_text: list[str]):
+        """
+        创建ListText控件
+
+        :param _id:  控件ID，不可与其他控件重复
+        :param hint_text:  提示文本
+        :param x:  控件在屏幕上x坐标
+        :param y:  控件在屏幕上y坐标
+        :param width:  控件宽度
+        :param height:  控件高度
+        :param list_text:  列表文本
+        :return:
+        """
+        return self.__send_data("createListText", _id, hint_text, x, y, width, height, list_text) == "true"
 
     def create_web_view(self, _id: int, url: str, x: int = -1, y: int = -1, width: int = -1, height: int = -1) -> bool:
         """
@@ -1640,3 +1691,153 @@ class AndroidBotBase:
         """
         response = self.__send_data("scoreCaptcha", username, password)
         return json.loads(response)
+
+    # ##########
+    #  验证码  #
+    ############
+    def __init_accessory(self) -> bool:
+        """
+        初始化android Accessory，获取手机hid相关的数据。
+
+        :return:
+        """
+        return self.__send_data("initAccessory") == "true"
+
+    def init_hid(self, win_driver) -> bool:
+        """
+        初始化Hid,不能重复调用，重复调用会导致get_hid_data取不到数据
+        
+        hid实际上是由windowsBot 通过数据线直接发送命令给安卓系统并执行，并不是由aibote.apk执行的命令。
+        我们应当将所有设备准备就绪再调用此函数初始化。
+        Windows initHid 和 android initAccessory函数 初始化目的是两者的数据交换，并告知windowsBot发送命令给哪台安卓设备
+
+        :param win_driver: windowsDriver实例，是调用build_win_driver的返回值
+        :return:
+        """
+        # 启动windowsDriver,一次就行
+        self.win_driver = win_driver
+        
+        if not self.win_driver:
+            return False
+        
+        # 初始化windowsBot的hid相关函数
+        # 注意，这里调用的是 windowsBot的 "initHid"
+        # windowsBot.initHid 和 initHid 在底层会交换hid相关数据
+        if self.win_driver.init_hid() == False:
+            return False
+        
+        # 初始化android Accessory，获取手机hid相关的数据。 先调用 AndroidBot.windowsBot.initHid() 后再调用initAccessory() 顺序不能变
+        if self.__init_accessory() == False:
+            return False
+        
+        # 先调用 windowsBot.initHid，再调用androidBot.initHid。
+        # 初始化完毕再通过windowsBot.getHidData获取交换后的hid相关的数据
+        # 不能重复调用
+        self.android_ids = self.win_driver.get_hid_data()
+        
+        # 获取AndroidId 用作hid相关函数区分手机设备
+        self.android_id = self.get_android_id()
+        for android_id in self.android_ids:
+            if android_id == self.android_id:
+                return True
+
+        return False
+
+    def get_rotation_angle(self) -> int:
+        """
+        获取手机旋转角度
+
+        :return: 手机旋转的角度
+        """
+        return int(self.__send_data("getRotationAngle"))
+
+    def hid_press(self, x: float, y: float) -> bool:
+        """
+        按下
+
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return self.win_driver.hid_press(self.android_id, angle, x, y) == "true"
+
+    def hid_move(self, x: float, y: float, duration: float) -> bool:
+        """
+        移动
+
+        :param x: 横坐标
+        :param y: 纵坐标
+        :param duration: 移动时长,秒(移动时间内脚本需保持运行)
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return self.win_driver.hid_move(self.android_id, angle, x, y, duration) == "true"
+
+    def hid_release(self) -> bool:
+        """
+        释放
+
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return self.win_driver.hid_release(self.android_id, angle) == "true"
+    
+    def hid_click(self, x: float, y: float) -> bool:
+        """
+        单击
+
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return self.win_driver.hid_click(self.android_id, angle, x, y) == "true"
+    
+    def hid_double_click(self, x: float, y: float) -> bool:
+        """
+        双击
+
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return self.win_driver.hid_double_click(self.android_id, angle, x, y) == "true"
+    
+    def hid_long_click(self, x: float, y: float, duration: float) -> bool:
+        """
+        长按
+
+        :param x: 横坐标
+        :param y: 纵坐标
+        :param duration: 按下时长,秒(按下时间内脚本需保持运行)
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return self.win_driver.hid_long_click(self.android_id, angle, x, y, duration) == "true"
+    
+    def hid_swipe(self, startX: float, startY: float, endX: float, endY: float, duration: float) -> bool:
+        """
+        滑动坐标
+
+        :param startX: 起始横坐标
+        :param startY: 起始纵坐标
+        :param endX: 结束横坐标
+        :param endY: 结束纵坐标
+        :param duration: 滑动时长,秒(滑动时间内脚本需保持运行)
+        :return: True或者False
+        """
+        angle = self.get_rotation_angle()
+        return self.win_driver.hid_swipe(self.android_id, angle, startX, startY, endX, endY, duration) == "true"
+    
+    def hid_gesture(self, gesture_path: List[_Point_Tuple], duration: float) -> bool:
+        """
+        Hid手势
+
+        :param gesture_path: 手势路径，由一系列坐标点组成
+        :param duration: 手势执行时长, 单位秒(执行时间内脚本需保持运行)
+        :return:
+        """
+        angle = self.get_rotation_angle()
+        return self.win_driver.hid_gesture(self.android_id, angle, gesture_path, duration) == "true"
