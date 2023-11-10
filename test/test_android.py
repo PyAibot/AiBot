@@ -8,7 +8,7 @@ class CustomAndroidScript(AndroidBotMain):
     log_level = "DEBUG"
 
     def script_main(self):
-        win_driver = self.build_win_driver(13366, False)
+        win_driver = self.build_win_driver(13366, True)
         print("win_driver", win_driver)
 
         # self.show_toast("连接成功")

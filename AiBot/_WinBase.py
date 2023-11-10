@@ -10,7 +10,7 @@ from urllib import request as request_lib, parse
 
 from loguru import logger
 
-from ._utils import Point, _Region, _Algorithm, _SubColors, Point2s, Log_Format
+from ._utils import Point, _Region, _Algorithm, _SubColors, Point2s, Log_Format, _Point_Tuple
 
 
 class _WinBotBase:
@@ -508,13 +508,13 @@ class _WinBotBase:
         """
         return self.__send_data("cropImage", image_path, save_path, left, top, rigth, bottom) == "true"
 
-    def find_images(self, hwnd: str, image_path: str, region: _Region = None, algorithm: _Algorithm = None,
+    def find_images(self, hwnd_or_big_image_path: str, image_path: str, region: _Region = None, algorithm: _Algorithm = None,
                     similarity: float = 0.9, mode: bool = False, multi: int = 1, wait_time: float = None,
                     interval_time: float = None) -> List[Point]:
         """
         寻找图片坐标，在当前屏幕中寻找给定图片中心点的坐标，返回坐标列表
 
-        :param hwnd: 窗口句柄；
+        :param hwnd_or_big_image_path: 窗口句柄或者图片路径；
         :param image_path: 图片的绝对路径；
         :param region: 从指定区域中找图，默认全屏；
         :param algorithm: 处理屏幕截图所用的算法，默认原图，注意：给定图片处理时所用的算法，应该和此方法的算法一致；
@@ -548,7 +548,13 @@ class _WinBotBase:
 
         end_time = time.time() + wait_time
         while time.time() < end_time:
-            response = self.__send_data("findImage", hwnd, image_path, *region, similarity, algorithm_type,
+            if hwnd_or_big_image_path.isdigit():
+                # 句柄
+                response = self.__send_data("findImage", hwnd_or_big_image_path, image_path, *region, similarity, algorithm_type,
+                                        threshold, max_val, multi, mode)
+            else:
+                # 图片
+                response = self.__send_data("findImageByFile", hwnd_or_big_image_path, image_path, *region, similarity, algorithm_type,
                                         threshold, max_val, multi, mode)
             # 找图失败
             if response in ["-1.0|-1.0", "-1|-1"]:
@@ -1363,14 +1369,14 @@ class _WinBotBase:
     # #############
     #   语音服务   #
     # #############
-    def activate_speech_service(self, activate_key: str) -> bool:
-        """
-        激活 initSpeechService (不支持win7)
+    # def activate_speech_service(self, activate_key: str) -> bool:
+    #     """
+    #     激活 initSpeechService (不支持win7)
 
-        :param activate_key: 激活密钥，联系管理员
-        :return: True或者False
-        """
-        return self.__send_data("activateSpeechService", activate_key) == "true"
+    #     :param activate_key: 激活密钥，联系管理员
+    #     :return: True或者False
+    #     """
+    #     return self.__send_data("activateSpeechService", activate_key) == "true"
 
     def init_speech_service(self, speech_key: str, speech_region: str) -> bool:
         """
@@ -1556,6 +1562,26 @@ class _WinBotBase:
         return self.__send_data("showSpeechText", origin_y, font_type, font_size, font_red, font_green, font_blue,
                                 italic, underline) == "true"
 
+    def make_metahuman_video(self, save_video_folder: str, text: str, language: str, voice_name: str, bg_file_path: str,
+                               sim_value: float = 0, voice_style: str = "General", quality: int = 0, speech_rate: int = 0,
+                               ) -> bool:
+        """
+        生成数字人短视频，此函数需要调用 initSpeechService 初始化语音服务
+
+        :param save_video_folder: 保存的视频目录
+        :param text: 要转换语音的文本
+        :param language: 语言，参考开发文档 语言和发音人
+        :param voice_name: 发音人，参考开发文档 语言和发音人
+        :param bg_file_path: 数字人背景 图片/视频 路径，扣除绿幕会自动获取绿幕的RGB值，null 则不替换背景。仅替换绿幕背景的数字人模型
+        :param sim_value: 相似度，默认为0。此处参数用作绿幕扣除微调RBG值。取值应当大于等于0
+        :param voice_style: 语音风格，默认General常规风格，其他风格参考开发文档 语言和发音人
+        :param quality: 音质，0低品质  1中品质  2高品质， 默认为0低品质
+        :param speech_rate:  语速，默认为0，取值范围 -100 至 200
+        :return: True或者False
+        """
+        return self.__send_data("makeMetahumanVideo", save_video_folder, text, language, voice_name, bg_file_path, sim_value, voice_style, quality,
+                                speech_rate) == "true"
+
     #################
     #   驱动程序相关   #
     #################
@@ -1574,3 +1600,130 @@ class _WinBotBase:
         :return:
         """
         return self.__send_data("closeDriver") == "true"
+
+    ###########
+    #   hid   #
+    ###########
+    def init_hid(self) -> bool:
+        """
+        初始化Hid
+
+        :return: True或者False
+        """
+        return self.__send_data("initHid") == "true"
+    
+    def get_hid_data(self) -> List[str]:
+        """
+        获取Hid相关数据
+
+        :return: 激活成功的hid手机的安卓ID
+        """
+        response = self.__send_data("getHidData")
+        if response == "":
+            return []
+        return response.split("|")
+    
+    def hid_press(self, android_id: str, angle: int, x: float, y: float) -> bool:
+        """
+        按下
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        return self.__send_data("hidPress", android_id, angle, x, y) == "true"
+    
+    def hid_move(self, android_id: str, angle: int, x: float, y: float, duration: float) -> bool:
+        """
+        移动
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param x: 横坐标
+        :param y: 纵坐标
+        :param duration: 移动时长,秒
+        :return: True或者False
+        """
+        return self.__send_data("hidMove", android_id, angle, x, y, duration * 1000) == "true"
+    
+    def hid_release(self, android_id: str, angle: int) -> bool:
+        """
+        释放
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :return: True或者False
+        """
+        return self.__send_data("hidRelease", android_id, angle) == "true"
+    
+    def hid_click(self, android_id: str, angle: int, x: float, y: float) -> bool:
+        """
+        单击
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        return self.__send_data("hidClick", android_id, angle, x, y) == "true"
+    
+    def hid_double_click(self, android_id: str, angle: int, x: float, y: float) -> bool:
+        """
+        双击
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param x: 横坐标
+        :param y: 纵坐标
+        :return: True或者False
+        """
+        return self.__send_data("hidDoubleClick", android_id, angle, x, y) == "true"
+    
+    def hid_long_click(self, android_id: str, angle: int, x: float, y: float, duration: float) -> bool:
+        """
+        长按
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param x: 横坐标
+        :param y: 纵坐标
+        :param duration: 按下时长,秒
+        :return: True或者False
+        """
+        return self.__send_data("hidLongClick", android_id, angle, x, y, duration * 1000) == "true"
+    
+    def hid_swipe(self, android_id: str, angle: int, startX: float, startY: float, endX: float, endY: float, duration: float) -> bool:
+        """
+        滑动坐标
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param startX: 起始横坐标
+        :param startY: 起始纵坐标
+        :param endX: 结束横坐标
+        :param endY: 结束纵坐标
+        :param duration: 滑动时长,秒
+        :return: True或者False
+        """
+        return self.__send_data("hidSwipe", android_id, angle, startX, startY, endX, endY, duration * 1000) == "true"
+    
+    def hid_gesture(self, android_id: str, angle: int, gesture_path: List[_Point_Tuple], duration: float) -> bool:
+        """
+        Hid手势
+
+        :param android_id: 安卓id
+        :param angle: 手机旋转角度
+        :param gesture_path: 手势路径，由一系列坐标点组成
+        :param duration: 手势执行时长, 单位秒
+        :return:
+        """
+
+        gesture_path_str = ""
+        for point in gesture_path:
+            gesture_path_str += f"{point[0]}/{point[1]}/\n"
+        gesture_path_str = gesture_path_str.strip()
+
+        return self.__send_data("hidDispatchGesture", android_id, angle, gesture_path_str, duration * 1000) == "true"
