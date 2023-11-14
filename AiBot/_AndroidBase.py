@@ -5,6 +5,7 @@ import time
 from ast import literal_eval
 from datetime import datetime
 from typing import Optional, Dict, List
+from ._WinBase import _WinBotBase
 
 from loguru import logger
 
@@ -1703,7 +1704,7 @@ class _AndroidBotBase:
         """
         return self.__send_data("initAccessory") == "true"
 
-    def init_hid(self, win_driver) -> bool:
+    def init_hid(self) -> bool:
         """
         初始化Hid,不能重复调用，重复调用会导致get_hid_data取不到数据
         
@@ -1711,11 +1712,10 @@ class _AndroidBotBase:
         我们应当将所有设备准备就绪再调用此函数初始化。
         Windows initHid 和 android initAccessory函数 初始化目的是两者的数据交换，并告知windowsBot发送命令给哪台安卓设备
 
-        :param win_driver: windowsDriver实例，是调用build_win_driver的返回值
-        :return:
+        :return: windowsDriver实例
         """
         # 启动windowsDriver,一次就行
-        self.win_driver = win_driver
+        self.win_driver = _WinBotBase._build(13366, True)
         
         if not self.win_driver:
             return False
@@ -1739,7 +1739,7 @@ class _AndroidBotBase:
         self.android_id = self.get_android_id()
         for android_id in self.android_ids:
             if android_id == self.android_id:
-                return True
+                return self.win_driver
 
         return False
 

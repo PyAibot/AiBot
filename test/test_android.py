@@ -8,11 +8,9 @@ class CustomAndroidScript(AndroidBotMain):
     log_level = "DEBUG"
 
     def script_main(self):
-        win_driver = self.build_win_driver(13366, True)
+        win_driver = self.init_hid()
         print("win_driver", win_driver)
-        self.init_hid(win_driver)
-        angle = self.get_rotation_angle()
-        win_driver.hid_swipe(self.android_id, angle, 100, 100, 400, 100, 2)
+        win_driver.hid_swipe(self.android_id, 100, 100, 400, 100, 2)
 
         # self.show_toast("连接成功")
         # self.create_text_view(90, "配置参数：", 0, 0)

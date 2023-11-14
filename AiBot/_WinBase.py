@@ -1623,32 +1623,32 @@ class _WinBotBase:
             return []
         return response.split("|")
     
-    def hid_press(self, android_id: str, angle: int, x: float, y: float) -> bool:
+    def hid_press(self, android_id: str, x: float, y: float, angle: int = 0) -> bool:
         """
         按下
 
         :param android_id: 安卓id
-        :param angle: 手机旋转角度
         :param x: 横坐标
         :param y: 纵坐标
+        :param angle: 手机旋转角度
         :return: True或者False
         """
         return self.__send_data("hidPress", android_id, angle, x, y) == "true"
     
-    def hid_move(self, android_id: str, angle: int, x: float, y: float, duration: float) -> bool:
+    def hid_move(self, android_id: str, x: float, y: float, duration: float, angle: int = 0) -> bool:
         """
         移动
 
         :param android_id: 安卓id
-        :param angle: 手机旋转角度
         :param x: 横坐标
         :param y: 纵坐标
         :param duration: 移动时长,秒
+        :param angle: 手机旋转角度
         :return: True或者False
         """
         return self.__send_data("hidMove", android_id, angle, x, y, duration * 1000) == "true"
     
-    def hid_release(self, android_id: str, angle: int) -> bool:
+    def hid_release(self, android_id: str, angle: int = 0) -> bool:
         """
         释放
 
@@ -1658,66 +1658,66 @@ class _WinBotBase:
         """
         return self.__send_data("hidRelease", android_id, angle) == "true"
     
-    def hid_click(self, android_id: str, angle: int, x: float, y: float) -> bool:
+    def hid_click(self, android_id: str, x: float, y: float, angle: int = 0) -> bool:
         """
         单击
 
         :param android_id: 安卓id
-        :param angle: 手机旋转角度
         :param x: 横坐标
         :param y: 纵坐标
+        :param angle: 手机旋转角度
         :return: True或者False
         """
         return self.__send_data("hidClick", android_id, angle, x, y) == "true"
     
-    def hid_double_click(self, android_id: str, angle: int, x: float, y: float) -> bool:
+    def hid_double_click(self, android_id: str, x: float, y: float, angle: int = 0) -> bool:
         """
         双击
 
         :param android_id: 安卓id
-        :param angle: 手机旋转角度
         :param x: 横坐标
         :param y: 纵坐标
+        :param angle: 手机旋转角度
         :return: True或者False
         """
         return self.__send_data("hidDoubleClick", android_id, angle, x, y) == "true"
     
-    def hid_long_click(self, android_id: str, angle: int, x: float, y: float, duration: float) -> bool:
+    def hid_long_click(self, android_id: str, x: float, y: float, duration: float, angle: int = 0) -> bool:
         """
         长按
 
         :param android_id: 安卓id
-        :param angle: 手机旋转角度
         :param x: 横坐标
         :param y: 纵坐标
         :param duration: 按下时长,秒
+        :param angle: 手机旋转角度
         :return: True或者False
         """
         return self.__send_data("hidLongClick", android_id, angle, x, y, duration * 1000) == "true"
     
-    def hid_swipe(self, android_id: str, angle: int, startX: float, startY: float, endX: float, endY: float, duration: float) -> bool:
+    def hid_swipe(self, android_id: str, startX: float, startY: float, endX: float, endY: float, duration: float, angle: int = 0) -> bool:
         """
         滑动坐标
 
         :param android_id: 安卓id
-        :param angle: 手机旋转角度
         :param startX: 起始横坐标
         :param startY: 起始纵坐标
         :param endX: 结束横坐标
         :param endY: 结束纵坐标
         :param duration: 滑动时长,秒
+        :param angle: 手机旋转角度
         :return: True或者False
         """
         return self.__send_data("hidSwipe", android_id, angle, startX, startY, endX, endY, duration * 1000) == "true"
     
-    def hid_gesture(self, android_id: str, angle: int, gesture_path: List[_Point_Tuple], duration: float) -> bool:
+    def hid_gesture(self, android_id: str, gesture_path: List[_Point_Tuple], duration: float, angle: int = 0) -> bool:
         """
         Hid手势
 
         :param android_id: 安卓id
-        :param angle: 手机旋转角度
         :param gesture_path: 手势路径，由一系列坐标点组成
         :param duration: 手势执行时长, 单位秒
+        :param angle: 手机旋转角度
         :return:
         """
 
