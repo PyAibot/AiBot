@@ -1693,7 +1693,7 @@ class _AndroidBotBase:
         return json.loads(response)
 
     # ##########
-    #  验证码  #
+    #  hid  #
     ############
     def __init_accessory(self) -> bool:
         """
@@ -1750,94 +1750,3 @@ class _AndroidBotBase:
         :return: 手机旋转的角度
         """
         return int(self.__send_data("getRotationAngle"))
-
-    def hid_press(self, x: float, y: float) -> bool:
-        """
-        按下
-
-        :param x: 横坐标
-        :param y: 纵坐标
-        :return: True或者False
-        """
-        angle = self.get_rotation_angle()
-        return self.win_driver.hid_press(self.android_id, angle, x, y) == "true"
-
-    def hid_move(self, x: float, y: float, duration: float) -> bool:
-        """
-        移动
-
-        :param x: 横坐标
-        :param y: 纵坐标
-        :param duration: 移动时长,秒(移动时间内脚本需保持运行)
-        :return: True或者False
-        """
-        angle = self.get_rotation_angle()
-        return self.win_driver.hid_move(self.android_id, angle, x, y, duration) == "true"
-
-    def hid_release(self) -> bool:
-        """
-        释放
-
-        :return: True或者False
-        """
-        angle = self.get_rotation_angle()
-        return self.win_driver.hid_release(self.android_id, angle) == "true"
-    
-    def hid_click(self, x: float, y: float) -> bool:
-        """
-        单击
-
-        :param x: 横坐标
-        :param y: 纵坐标
-        :return: True或者False
-        """
-        angle = self.get_rotation_angle()
-        return self.win_driver.hid_click(self.android_id, angle, x, y) == "true"
-    
-    def hid_double_click(self, x: float, y: float) -> bool:
-        """
-        双击
-
-        :param x: 横坐标
-        :param y: 纵坐标
-        :return: True或者False
-        """
-        angle = self.get_rotation_angle()
-        return self.win_driver.hid_double_click(self.android_id, angle, x, y) == "true"
-    
-    def hid_long_click(self, x: float, y: float, duration: float) -> bool:
-        """
-        长按
-
-        :param x: 横坐标
-        :param y: 纵坐标
-        :param duration: 按下时长,秒(按下时间内脚本需保持运行)
-        :return: True或者False
-        """
-        angle = self.get_rotation_angle()
-        return self.win_driver.hid_long_click(self.android_id, angle, x, y, duration) == "true"
-    
-    def hid_swipe(self, startX: float, startY: float, endX: float, endY: float, duration: float) -> bool:
-        """
-        滑动坐标
-
-        :param startX: 起始横坐标
-        :param startY: 起始纵坐标
-        :param endX: 结束横坐标
-        :param endY: 结束纵坐标
-        :param duration: 滑动时长,秒(滑动时间内脚本需保持运行)
-        :return: True或者False
-        """
-        angle = self.get_rotation_angle()
-        return self.win_driver.hid_swipe(self.android_id, angle, startX, startY, endX, endY, duration) == "true"
-    
-    def hid_gesture(self, gesture_path: List[_Point_Tuple], duration: float) -> bool:
-        """
-        Hid手势
-
-        :param gesture_path: 手势路径，由一系列坐标点组成
-        :param duration: 手势执行时长, 单位秒(执行时间内脚本需保持运行)
-        :return:
-        """
-        angle = self.get_rotation_angle()
-        return self.win_driver.hid_gesture(self.android_id, angle, gesture_path, duration) == "true"
