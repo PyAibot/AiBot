@@ -1538,7 +1538,7 @@ class AndroidBotBase:
     # ##############
     #   控件与参数   #
     # ##############
-    def create_text_view(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60):
+    def create_text_view(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60) -> bool:
         """
         创建文本框控件
 
@@ -1552,7 +1552,7 @@ class AndroidBotBase:
         """
         return self.__send_data("createTextView", _id, text, x, y, width, height) == "true"
 
-    def create_edit_view(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 150):
+    def create_edit_view(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 150) -> bool:
         """
         创建编辑框控件
 
@@ -1566,7 +1566,8 @@ class AndroidBotBase:
         """
         return self.__send_data("createEditText", _id, text, x, y, width, height) == "true"
 
-    def create_check_box(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60, is_select: bool = False):
+    def create_check_box(self, _id: int, text: str, x: int, y: int, width: int = 400, height: int = 60,
+                         is_select: bool = False) -> bool:
         """
         创建复选框控件
 
@@ -1581,7 +1582,8 @@ class AndroidBotBase:
         """
         return self.__send_data("createCheckBox", _id, text, x, y, width, height, is_select) == "true"
 
-    def create_list_text(self, _id: int, hint_text: str, x: int, y: int, width: int, height: int, list_text: list[str]):
+    def create_list_text(self, _id: int, hint_text: str, x: int, y: int, width: int, height: int,
+                         list_text: list[str]) -> bool:
         """
         创建ListText控件
 
@@ -1693,11 +1695,11 @@ class AndroidBotBase:
         return json.loads(response)
 
     # ##########
-    #  验证码  #
+    #  HID相关 #
     ############
     def __init_accessory(self) -> bool:
         """
-        初始化android Accessory，获取手机hid相关的数据。
+        初始化 android Accessory，获取手机 hid 相关的数据。
 
         :return:
         """
@@ -1711,30 +1713,30 @@ class AndroidBotBase:
         我们应当将所有设备准备就绪再调用此函数初始化。
         Windows initHid 和 android initAccessory函数 初始化目的是两者的数据交换，并告知windowsBot发送命令给哪台安卓设备
 
-        :param win_driver: windowsDriver实例，是调用build_win_driver的返回值
+        :param win_driver: windowsDriver 实例，是调用 build_win_driver 的返回值
         :return:
         """
         # 启动windowsDriver,一次就行
         self.win_driver = win_driver
-        
+
         if not self.win_driver:
             return False
-        
+
         # 初始化windowsBot的hid相关函数
         # 注意，这里调用的是 windowsBot的 "initHid"
         # windowsBot.initHid 和 initHid 在底层会交换hid相关数据
-        if self.win_driver.init_hid() == False:
+        if not self.win_driver.init_hid():
             return False
-        
+
         # 初始化android Accessory，获取手机hid相关的数据。 先调用 AndroidBot.windowsBot.initHid() 后再调用initAccessory() 顺序不能变
-        if self.__init_accessory() == False:
+        if not self.__init_accessory():
             return False
-        
+
         # 先调用 windowsBot.initHid，再调用androidBot.initHid。
         # 初始化完毕再通过windowsBot.getHidData获取交换后的hid相关的数据
         # 不能重复调用
         self.android_ids = self.win_driver.get_hid_data()
-        
+
         # 获取AndroidId 用作hid相关函数区分手机设备
         self.android_id = self.get_android_id()
         for android_id in self.android_ids:
@@ -1782,7 +1784,7 @@ class AndroidBotBase:
         """
         angle = self.get_rotation_angle()
         return self.win_driver.hid_release(self.android_id, angle) == "true"
-    
+
     def hid_click(self, x: float, y: float) -> bool:
         """
         单击
@@ -1793,7 +1795,7 @@ class AndroidBotBase:
         """
         angle = self.get_rotation_angle()
         return self.win_driver.hid_click(self.android_id, angle, x, y) == "true"
-    
+
     def hid_double_click(self, x: float, y: float) -> bool:
         """
         双击
@@ -1804,7 +1806,7 @@ class AndroidBotBase:
         """
         angle = self.get_rotation_angle()
         return self.win_driver.hid_double_click(self.android_id, angle, x, y) == "true"
-    
+
     def hid_long_click(self, x: float, y: float, duration: float) -> bool:
         """
         长按
@@ -1816,7 +1818,7 @@ class AndroidBotBase:
         """
         angle = self.get_rotation_angle()
         return self.win_driver.hid_long_click(self.android_id, angle, x, y, duration) == "true"
-    
+
     def hid_swipe(self, startX: float, startY: float, endX: float, endY: float, duration: float) -> bool:
         """
         滑动坐标
@@ -1830,7 +1832,7 @@ class AndroidBotBase:
         """
         angle = self.get_rotation_angle()
         return self.win_driver.hid_swipe(self.android_id, angle, startX, startY, endX, endY, duration) == "true"
-    
+
     def hid_gesture(self, gesture_path: List[_Point_Tuple], duration: float) -> bool:
         """
         Hid手势
