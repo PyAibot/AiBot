@@ -17,9 +17,8 @@ WIN_DRIVER: WinBotBase | None = None
 
 class WebBotMain(socketserver.BaseRequestHandler, WebBotBase, metaclass=_protect("handle", "execute")):
     def __init__(self, request, client_address, server):
-        super().__init__(request, client_address, server)
         self._lock = threading.Lock()
-        self.__sock = request
+        super().__init__(request, client_address, server)
 
     def handle(self) -> None:
         self.script_main()

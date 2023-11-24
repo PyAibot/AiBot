@@ -2,6 +2,7 @@ import json
 import random
 import socket
 import subprocess
+import sys
 import threading
 from typing import Optional, Tuple, Any, Literal
 
@@ -20,8 +21,10 @@ class WebBotBase:
     log_size = 10  # MB
 
     log = logger
+    log.remove()
 
     if log_storage:
+        log.add(sys.stdout, level=log_level.upper(), format=Log_Format)
         log.add("./runtime.log", level=log_level.upper(), format=Log_Format,
                 rotation=f'{log_size} MB',
                 retention='0 days')
