@@ -706,15 +706,14 @@ class AndroidBotBase:
             return []
         return self.__parse_ocr(response)
 
-    def init_ocr_server(self, ip: str, port: int = 9752) -> bool:
+    def init_ocr_server(self, ip: str) -> bool:
         """
         初始化 OCR 服务
 
         :param ip:
-        :param port:
         :return:
         """
-        return self.__send_data("initOcr", ip, port) == "true"
+        return self.__send_data("initOcr", ip) == "true"
 
     def get_text(self, region: _Region = None, algorithm: _Algorithm = None, scale: float = 1.0) -> List[str]:
         """
@@ -791,6 +790,28 @@ class AndroidBotBase:
                 text_points.append(text_point)
 
         return text_points
+
+    def init_yolo_server(self, ip: str, model_path: str = "d:/yolov8n.onnx"):
+        """
+        初始化 yolo 服务
+
+        :param ip: OCR 服务 IP 或域名，端口固定9528。
+        :param model_path: 模型路径
+        :return:
+        """
+        return self.__send_data("initYolo", ip, model_path) == "true"
+
+    def yolo(self, scale: float) -> list:
+        """
+        yolo 目标检测
+
+        :param scale: 图片缩放率, 默认为 1.0 原大小。大于 1.0 放大，小于 1.0 缩小，不能为负数。
+        :return:
+        """
+        resp = self.__send_data("yolo", scale)
+        if resp == "null":
+            return []
+        return json.loads(resp)
 
     # #############
     #   元素操作   #

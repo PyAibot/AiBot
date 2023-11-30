@@ -511,7 +511,8 @@ class WinBotBase:
         """
         return self.__send_data("cropImage", image_path, save_path, left, top, rigth, bottom) == "true"
 
-    def find_images(self, hwnd_or_big_image_path: str, image_path: str, region: _Region = None, algorithm: _Algorithm = None,
+    def find_images(self, hwnd_or_big_image_path: str, image_path: str, region: _Region = None,
+                    algorithm: _Algorithm = None,
                     similarity: float = 0.9, mode: bool = False, multi: int = 1, wait_time: float = None,
                     interval_time: float = None) -> List[Point]:
         """
@@ -553,12 +554,14 @@ class WinBotBase:
         while time.time() < end_time:
             if hwnd_or_big_image_path.isdigit():
                 # 句柄
-                response = self.__send_data("findImage", hwnd_or_big_image_path, image_path, *region, similarity, algorithm_type,
-                                        threshold, max_val, multi, mode)
+                response = self.__send_data("findImage", hwnd_or_big_image_path, image_path, *region, similarity,
+                                            algorithm_type,
+                                            threshold, max_val, multi, mode)
             else:
                 # 图片
-                response = self.__send_data("findImageByFile", hwnd_or_big_image_path, image_path, *region, similarity, algorithm_type,
-                                        threshold, max_val, multi, mode)
+                response = self.__send_data("findImageByFile", hwnd_or_big_image_path, image_path, *region, similarity,
+                                            algorithm_type,
+                                            threshold, max_val, multi, mode)
             # 找图失败
             if response in ["-1.0|-1.0", "-1|-1"]:
                 time.sleep(interval_time)
@@ -693,15 +696,18 @@ class WinBotBase:
             return []
         return self.__parse_ocr(response)
 
-    def init_ocr_server(self, ip: str, port: int = 9752) -> bool:
+    def init_ocr_server(self, ip: str, use_angle_model: bool = False, enable_gpu: bool = False,
+                        enable_tensorrt: bool = False) -> bool:
         """
         初始化 OCR 服务
 
         :param ip:
-        :param port:
+        :param use_angle_model: 支持图像旋转
+        :param enable_gpu: 启动GPU 模式。GPU 模式需要电脑安装 NVIDIA 驱动，并且到群文件下载对应 cuda 版本
+        :param enable_tensorrt: 启动加速，仅 enable_gpu = True 时有效。图片太大可能会导致GPU内存不足。
         :return:
         """
-        return self.__send_data("initOcr", ip, port) == "true"
+        return self.__send_data("initOcr", ip, use_angle_model, enable_gpu, enable_tensorrt) == "true"
 
     def get_text(self, hwnd_or_image_path: str, region: _Region = None, algorithm: _Algorithm = None,
                  mode: bool = False) -> List[str]:
@@ -792,6 +798,42 @@ class WinBotBase:
                 text_points.append(text_point)
 
         return text_points
+
+    def init_yolo_server(self, ip: str, model_path: str = "d:/yolov8n.onnx"):
+        """
+        初始化 yolo 服务
+
+        :param ip: OCR 服务 IP 或域名，端口固定9528。
+        :param model_path: 模型路径
+        :return:
+        """
+        return self.__send_data("initYolo", ip, model_path) == "true"
+
+    def yolo_by_hwnd(self, hwnd: int, mode: bool = False) -> list:
+        """
+        yolo 目标检测
+
+        :param hwnd: 窗口句柄
+        :param mode: 参数一为句柄时的前后台识别
+        :return:
+        """
+        resp = self.__send_data("yoloByHwnd", hwnd, mode)
+        if resp == "null":
+            return []
+        return json.loads(resp)
+
+    def yolo_by_file(self, file_path: str, mode: bool = False) -> list:
+        """
+        yolo 目标检测
+
+        :param file_path: 图片路径
+        :param mode: 参数一为句柄时的前后台识别
+        :return:
+        """
+        resp = self.__send_data("yoloByFile", file_path, mode)
+        if resp == "null":
+            return []
+        return json.loads(resp)
 
     # ##############
     #   元素操作   #
@@ -1566,8 +1608,8 @@ class WinBotBase:
                                 italic, underline) == "true"
 
     def make_metahuman_video(self, save_video_folder: str, text: str, language: str, voice_name: str, bg_file_path: str,
-                               sim_value: float = 0, voice_style: str = "General", quality: int = 0, speech_rate: int = 0,
-                               ) -> bool:
+                             sim_value: float = 0, voice_style: str = "General", quality: int = 0, speech_rate: int = 0,
+                             ) -> bool:
         """
         生成数字人短视频，此函数需要调用 initSpeechService 初始化语音服务
 
@@ -1582,7 +1624,8 @@ class WinBotBase:
         :param speech_rate:  语速，默认为0，取值范围 -100 至 200
         :return: True或者False
         """
-        return self.__send_data("makeMetahumanVideo", save_video_folder, text, language, voice_name, bg_file_path, sim_value, voice_style, quality,
+        return self.__send_data("makeMetahumanVideo", save_video_folder, text, language, voice_name, bg_file_path,
+                                sim_value, voice_style, quality,
                                 speech_rate) == "true"
 
     #################
@@ -1614,7 +1657,7 @@ class WinBotBase:
         :return: True或者False
         """
         return self.__send_data("initHid") == "true"
-    
+
     def get_hid_data(self) -> List[str]:
         """
         获取Hid相关数据
@@ -1625,7 +1668,7 @@ class WinBotBase:
         if response == "":
             return []
         return response.split("|")
-    
+
     def hid_press(self, android_id: str, angle: int, x: float, y: float) -> bool:
         """
         按下
@@ -1637,7 +1680,7 @@ class WinBotBase:
         :return: True或者False
         """
         return self.__send_data("hidPress", android_id, angle, x, y) == "true"
-    
+
     def hid_move(self, android_id: str, angle: int, x: float, y: float, duration: float) -> bool:
         """
         移动
@@ -1650,7 +1693,7 @@ class WinBotBase:
         :return: True或者False
         """
         return self.__send_data("hidMove", android_id, angle, x, y, duration * 1000) == "true"
-    
+
     def hid_release(self, android_id: str, angle: int) -> bool:
         """
         释放
@@ -1660,7 +1703,7 @@ class WinBotBase:
         :return: True或者False
         """
         return self.__send_data("hidRelease", android_id, angle) == "true"
-    
+
     def hid_click(self, android_id: str, angle: int, x: float, y: float) -> bool:
         """
         单击
@@ -1672,7 +1715,7 @@ class WinBotBase:
         :return: True或者False
         """
         return self.__send_data("hidClick", android_id, angle, x, y) == "true"
-    
+
     def hid_double_click(self, android_id: str, angle: int, x: float, y: float) -> bool:
         """
         双击
@@ -1684,7 +1727,7 @@ class WinBotBase:
         :return: True或者False
         """
         return self.__send_data("hidDoubleClick", android_id, angle, x, y) == "true"
-    
+
     def hid_long_click(self, android_id: str, angle: int, x: float, y: float, duration: float) -> bool:
         """
         长按
@@ -1697,8 +1740,9 @@ class WinBotBase:
         :return: True或者False
         """
         return self.__send_data("hidLongClick", android_id, angle, x, y, duration * 1000) == "true"
-    
-    def hid_swipe(self, android_id: str, angle: int, startX: float, startY: float, endX: float, endY: float, duration: float) -> bool:
+
+    def hid_swipe(self, android_id: str, angle: int, startX: float, startY: float, endX: float, endY: float,
+                  duration: float) -> bool:
         """
         滑动坐标
 
@@ -1712,7 +1756,7 @@ class WinBotBase:
         :return: True或者False
         """
         return self.__send_data("hidSwipe", android_id, angle, startX, startY, endX, endY, duration * 1000) == "true"
-    
+
     def hid_gesture(self, android_id: str, angle: int, gesture_path: List[_Point_Tuple], duration: float) -> bool:
         """
         Hid手势
