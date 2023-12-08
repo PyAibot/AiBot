@@ -23,10 +23,7 @@ class WebBotMain(socketserver.BaseRequestHandler, WebBotBase, metaclass=_protect
 
         if self.log_storage:
             path = "runtime.log"
-            for handler in self.log._core.handlers:
-                if isinstance(handler.sink, str) and handler.sink == path:
-                    break
-            else:
+            if path not in str(logger._core.handlers):
                 self.log.add(path, level=self.log_level.upper(), format=Log_Format,
                              rotation=f'{self.log_size} MB',
                              retention='0 days')
