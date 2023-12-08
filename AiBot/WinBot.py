@@ -5,7 +5,7 @@ import subprocess
 import sys
 import threading
 
-from loguru import logger
+from loguru import logger, Logger
 
 from AiBot._AndroidBase import AndroidBotBase
 from AiBot._WebBase import WebBotBase
@@ -14,16 +14,22 @@ from AiBot._utils import _protect, _ThreadingTCPServer, get_local_ip, Log_Format
 
 AND_DRIVER: AndroidBotBase | None = None
 WEB_DRIVER: WebBotBase | None = None
+logger.remove()
 
 
 class WinBotMain(socketserver.BaseRequestHandler, WinBotBase, metaclass=_protect("handle", "execute")):
     def __init__(self, request, client_address, server):
         self.log = logger
-        self.log.add(sys.stdout, level=self.log_level.upper(), format=Log_Format)
+
         if self.log_storage:
-            self.log.add("./runtime.log", level=self.log_level.upper(), format=Log_Format,
-                         rotation=f'{self.log_size} MB',
-                         retention='0 days')
+            path = "runtime.log"
+            for handler in self.log._core.handlers:
+                if isinstance(handler.sink, str) and handler.sink == path:
+                    break
+            else:
+                self.log.add(path, level=self.log_level.upper(), format=Log_Format,
+                             rotation=f'{self.log_size} MB',
+                             retention='0 days')
 
         self._lock = threading.Lock()
         super().__init__(request, client_address, server)

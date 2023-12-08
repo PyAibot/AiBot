@@ -17,11 +17,16 @@ WEB_DRIVER: WebBotBase | None = None
 class AndroidBotMain(socketserver.BaseRequestHandler, AndroidBotBase, metaclass=_protect("handle", "execute")):
     def __init__(self, request, client_address, server):
         self.log = logger
-        self.log.add(sys.stdout, level=self.log_level.upper(), format=Log_Format)
+
         if self.log_storage:
-            self.log.add("./runtime.log", level=self.log_level.upper(), format=Log_Format,
-                         rotation=f'{self.log_size} MB',
-                         retention='0 days')
+            path = "runtime.log"
+            for handler in self.log._core.handlers:
+                if isinstance(handler.sink, str) and handler.sink == path:
+                    break
+            else:
+                self.log.add(path, level=self.log_level.upper(), format=Log_Format,
+                             rotation=f'{self.log_size} MB',
+                             retention='0 days')
 
         self._lock = threading.Lock()
         super().__init__(request, client_address, server)
