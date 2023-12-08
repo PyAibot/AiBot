@@ -1,6 +1,5 @@
 import json
 import socket
-import sys
 import threading
 import time
 from ast import literal_eval
@@ -9,7 +8,7 @@ from typing import Optional, Dict, List
 
 from loguru import logger
 
-from ._utils import _Point_Tuple, _Region, _Algorithm, _SubColors, Log_Format, Point, Point2s
+from ._utils import _Point_Tuple, _Region, _Algorithm, _SubColors, Point, Point2s
 
 
 # _LOG_PATH = Path(__file__).parent.resolve() / "logs"
@@ -41,15 +40,7 @@ class AndroidBotBase:
     log_storage = False
     log_level = "INFO"
     log_size = 10  # MB
-
     log = logger
-    log.remove()
-
-    if log_storage:
-        log.add(sys.stdout, level=log_level.upper(), format=Log_Format)
-        log.add("./runtime.log", level=log_level.upper(), format=Log_Format,
-                rotation=f'{log_size} MB',
-                retention='0 days')
 
     # 基础存储路径
     _base_path = "/storage/emulated/0/Android/data/com.aibot.client/files/"

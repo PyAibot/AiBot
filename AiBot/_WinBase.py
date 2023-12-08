@@ -1,6 +1,5 @@
 import socket
 import subprocess
-import sys
 import threading
 import time
 import json
@@ -11,7 +10,7 @@ from urllib import request as request_lib, parse
 
 from loguru import logger
 
-from ._utils import Point, _Region, _Algorithm, _SubColors, Point2s, Log_Format, _Point_Tuple
+from ._utils import Point, _Region, _Algorithm, _SubColors, Point2s, _Point_Tuple
 
 
 class WinBotBase:
@@ -22,15 +21,7 @@ class WinBotBase:
     log_storage = False
     log_level = "INFO"
     log_size = 10  # MB
-
     log = logger
-    log.remove()
-
-    if log_storage:
-        log.add(sys.stdout, level=log_level.upper(), format=Log_Format)
-        log.add("./runtime.log", level=log_level.upper(), format=Log_Format,
-                rotation=f'{log_size} MB',
-                retention='0 days')
 
     def __init__(self, port):
         self._lock = threading.Lock()

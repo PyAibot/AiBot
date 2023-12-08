@@ -4,12 +4,15 @@ import random
 import socket
 import socketserver
 import subprocess
+import sys
 import threading
+
+from loguru import logger
 
 from AiBot._WebBase import WebBotBase
 from AiBot._WinBase import WinBotBase
 from AiBot._AndroidBase import AndroidBotBase
-from AiBot._utils import _protect, _ThreadingTCPServer, get_local_ip
+from AiBot._utils import _protect, _ThreadingTCPServer, get_local_ip, Log_Format
 
 AND_DRIVER: AndroidBotBase | None = None
 WIN_DRIVER: WinBotBase | None = None
@@ -17,6 +20,13 @@ WIN_DRIVER: WinBotBase | None = None
 
 class WebBotMain(socketserver.BaseRequestHandler, WebBotBase, metaclass=_protect("handle", "execute")):
     def __init__(self, request, client_address, server):
+        self.log = logger
+        self.log.add(sys.stdout, level=self.log_level.upper(), format=Log_Format)
+        if self.log_storage:
+            self.log.add("./runtime.log", level=self.log_level.upper(), format=Log_Format,
+                         rotation=f'{self.log_size} MB',
+                         retention='0 days')
+
         self._lock = threading.Lock()
         super().__init__(request, client_address, server)
 
