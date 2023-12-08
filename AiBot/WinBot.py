@@ -2,10 +2,9 @@ import abc
 import socket
 import socketserver
 import subprocess
-import sys
 import threading
 
-from loguru import logger, Logger
+from loguru import logger
 
 from AiBot._AndroidBase import AndroidBotBase
 from AiBot._WebBase import WebBotBase
@@ -14,7 +13,6 @@ from AiBot._utils import _protect, _ThreadingTCPServer, get_local_ip, Log_Format
 
 AND_DRIVER: AndroidBotBase | None = None
 WEB_DRIVER: WebBotBase | None = None
-logger.remove()
 
 
 class WinBotMain(socketserver.BaseRequestHandler, WinBotBase, metaclass=_protect("handle", "execute")):

@@ -2,7 +2,6 @@ import abc
 import socketserver
 import socket
 import threading
-import sys
 from loguru import logger
 
 from ._AndroidBase import AndroidBotBase

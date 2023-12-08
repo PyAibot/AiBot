@@ -4,7 +4,6 @@ import random
 import socket
 import socketserver
 import subprocess
-import sys
 import threading
 
 from loguru import logger
