@@ -657,7 +657,7 @@ class WinBotBase:
                 threshold = 127
                 max_val = 255
 
-        response = self.__send_data("ocr", hwnd, *region, algorithm_type, threshold, max_val, mode)
+        response = self.__send_data("ocrByHwnd", hwnd, *region, algorithm_type, threshold, max_val, mode)
         if response == "null" or response == "":
             return []
         return self.__parse_ocr(response)
@@ -790,15 +790,16 @@ class WinBotBase:
 
         return text_points
 
-    def init_yolo_server(self, ip: str, model_path: str = "d:/yolov8n.onnx"):
+    def init_yolo_server(self, ip: str, model_path: str = "d:/yolov8n.onnx", classes_path: str = ''):
         """
         初始化 yolo 服务
 
         :param ip: OCR 服务 IP 或域名，端口固定9528。
         :param model_path: 模型路径
+        :param classes_path: 种类路径，CPU模式需要此参数
         :return:
         """
-        return self.__send_data("initYolo", ip, model_path) == "true"
+        return self.__send_data("initYolo", ip, model_path, classes_path) == "true"
 
     def yolo_by_hwnd(self, hwnd: int, mode: bool = False) -> list:
         """
@@ -1538,7 +1539,7 @@ class WinBotBase:
                                quality: int = 0, wait_play_sound: bool = True, speech_rate: int = 0,
                                voice_style: str = "General") -> bool:
         """
-        *数字人说话缓存模式，需要调用 initSpeechService 初始化语音服务。函数一般用于常用的话术播报，非常用话术切勿使用，否则内存泄漏
+        *数字人说话内存缓存模式，需要调用 initSpeechService 初始化语音服务。函数一般用于常用的话术播报，非常用话术切勿使用，否则内存泄漏
 
         :param save_voice_folder: 保存的发音文件目录，文件名以0开始依次增加，扩展为.wav格式
         :param text: 要转换语音的文本
@@ -1552,6 +1553,25 @@ class WinBotBase:
         """
         return self.__send_data("metahumanSpeechCache", save_voice_folder, text, language, voice_name, quality,
                                 wait_play_sound, speech_rate, voice_style) == "true"
+    
+    def metahuman_speech_by_file(self, audio_path:str, wait_play_sound: bool = True) -> bool:
+        """
+        *数字人说话文件缓存模式
+
+        :param audio_path: 音频路径， 同名的 .lab文件需要和音频文件在同一目录下
+        :param wait_play_sound: 等待音频播报完毕，默认为 true等待
+        :return: True或者False
+        """
+        return self.__send_data("metahumanSpeechByFile", audio_path, wait_play_sound) == "true"
+    
+    def metahuman_speech_break(self) -> bool:
+        """
+        打断数字人说话，一般用作人机对话场景。
+        metahumanSpeech和metahumanSpeechCache的 waitPlaySound 参数 设置为false时，此函数才有意义
+
+        :return: True或者False
+        """
+        return self.__send_data("metahumanSpeechBreak") == "true"
 
     def metahuman_insert_video(self, video_file_path: str, audio_file_path: str, wait_play_video: bool = True) -> bool:
         """
@@ -1618,6 +1638,41 @@ class WinBotBase:
         return self.__send_data("makeMetahumanVideo", save_video_folder, text, language, voice_name, bg_file_path,
                                 sim_value, voice_style, quality,
                                 speech_rate) == "true"
+    
+    def init_speech_clone_service(self, api_key, voice_id) -> bool:
+        """
+        初始化数字人声音克隆服务
+
+        :param api_key: API密钥
+        :param voice_id: 声音ID
+        :return: True或者False
+        """
+        return self.__send_data("makeMetahumanVideo", api_key, voice_id) == "true"
+    
+    def metahuman_speech_clone(self, save_video_path: str, text: str, language: str, wait_play_sound: bool = True) -> bool:
+        """
+        数字人使用克隆声音说话，此函数需要调用 initSpeechCloneService 初始化语音服务
+
+        :param save_video_path: 保存的发音文件路径。这里是路径，不是目录！
+        :param text: 要转换语音的文本
+        :param language: 语言，中文：zh-cn，其他语言：other-languages 
+        :param wait_play_sound: 等待音频播报完毕，默认为 true等待
+        :return: True或者False
+        """
+        return self.__send_data("metahumanSpeechClone", save_video_path, text, language, wait_play_sound) == "true"
+    
+    def make_metahuman_video_clone(self, save_video_folder: str, text: str, language: str,bg_file_path: str, sim_value: float = 0) -> bool:
+        """
+        初始化数字人声音克隆服务
+
+        :param save_video_folder: 保存的视频和音频文件目录
+        :param text: 要转换语音的文本
+        :param language: 语言，中文：zh-cn，其他语言：other-languages
+        :param bg_file_path: 数字人背景 图片/视频 路径，扣除绿幕会自动获取绿幕的RGB值，null 则不替换背景。仅替换绿幕背景的数字人模型
+        :param sim_value: 相似度，默认为0。此处参数用作绿幕扣除微调RBG值。取值应当大于等于0
+        :return: True或者False
+        """
+        return self.__send_data("makeMetahumanVideoClone", save_video_folder, text, language, bg_file_path, sim_value) == "true"
 
     #################
     #   驱动程序相关   #

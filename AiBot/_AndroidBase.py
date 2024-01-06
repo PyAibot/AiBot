@@ -697,14 +697,18 @@ class AndroidBotBase:
             return []
         return self.__parse_ocr(response)
 
-    def init_ocr_server(self, ip: str) -> bool:
+    def init_ocr_server(self, ip: str, use_angle_model: bool = False, enable_gpu: bool = False,
+                        enable_tensorrt: bool = False) -> bool:
         """
         初始化 OCR 服务
 
         :param ip:
+        :param use_angle_model: 支持图像旋转
+        :param enable_gpu: 启动GPU 模式。GPU 模式需要电脑安装 NVIDIA 驱动，并且到群文件下载对应 cuda 版本
+        :param enable_tensorrt: 启动加速，仅 enable_gpu = True 时有效。图片太大可能会导致GPU内存不足。
         :return:
         """
-        return self.__send_data("initOcr", ip) == "true"
+        return self.__send_data("initOcr", ip, use_angle_model, enable_gpu, enable_tensorrt) == "true"
 
     def get_text(self, region: _Region = None, algorithm: _Algorithm = None, scale: float = 1.0) -> List[str]:
         """
@@ -782,15 +786,16 @@ class AndroidBotBase:
 
         return text_points
 
-    def init_yolo_server(self, ip: str, model_path: str = "d:/yolov8n.onnx"):
+    def init_yolo_server(self, ip: str, model_path: str = "d:/yolov8n.onnx", classes_path: str = ''):
         """
         初始化 yolo 服务
 
         :param ip: OCR 服务 IP 或域名，端口固定9528。
         :param model_path: 模型路径
+        :param classes_path: 种类路径，CPU模式需要此参数
         :return:
         """
-        return self.__send_data("initYolo", ip, model_path) == "true"
+        return self.__send_data("initYolo", ip, model_path, classes_path) == "true"
 
     def yolo(self, scale: float) -> list:
         """

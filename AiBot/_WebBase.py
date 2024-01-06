@@ -475,6 +475,36 @@ class WebBotBase:
         :return:
         """
         return self.__send_data("wheelMouseByXpath", xpath, offset_x, offset_y) == "true"
+    
+    def touch_start(self, x: float, y: float) -> bool:
+        """
+        仿真模式 开始触屏
+
+        :param offset_x: x 非Windows坐标，页面左上角为起始坐标，可以通过getElementRect 获取相关坐标
+        :param offset_y: y 非Windows坐标，页面左上角为起始坐标，可以通过getElementRect 获取相关坐标
+        :return:
+        """
+        return self.__send_data("touchStart", x, y) == "true"
+    
+    def touch_move(self, x: float, y: float) -> bool:
+        """
+        仿真模式 移动触屏
+
+        :param offset_x: x 非Windows坐标，页面左上角为起始坐标，可以通过getElementRect 获取相关坐标
+        :param offset_y: y 非Windows坐标，页面左上角为起始坐标，可以通过getElementRect 获取相关坐标
+        :return:
+        """
+        return self.__send_data("touchMove", x, y) == "true"
+    
+    def touch_end(self, x: float, y: float) -> bool:
+        """
+        仿真模式 结束触屏
+
+        :param offset_x: x 一般同最后一个触屏事件的坐标一致
+        :param offset_y: y 一般同最后一个触屏事件的坐标一致
+        :return:
+        """
+        return self.__send_data("touchEnd", x, y) == "true"
 
     #############
     #   Alert   #
