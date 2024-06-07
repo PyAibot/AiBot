@@ -148,6 +148,9 @@ class AndroidBotBase:
 
         return data
 
+    def active_device(self, key :str) -> str:
+        return self.__send_data("activateFrame", key)
+
     def save_screenshot(self, image_name: str, region: _Region = None, algorithm: _Algorithm = None) -> Optional[str]:
         """
         保存截图，返回图片地址(手机中)或者 None
